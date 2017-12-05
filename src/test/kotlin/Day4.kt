@@ -20,7 +20,7 @@ The system's full passphrase list is available as your puzzle input. How many pa
  */
 
 fun splitPassphrase(passphrase: String) =
-                if (passphrase.isBlank()) listOf<String>()
+                if (passphrase.isBlank()) listOf()
                 else passphrase.split("""\s+""".toRegex())
 
 fun validate(passphrase: String): Boolean =
@@ -44,7 +44,7 @@ class Day4Spec : Spek({
             val passphrase = ""
 
             it("should be empty list") {
-                splitPassphrase(passphrase) `should equal` listOf<String>()
+                splitPassphrase(passphrase) `should equal` listOf()
             }
         }
         on("passphrase with one word") {

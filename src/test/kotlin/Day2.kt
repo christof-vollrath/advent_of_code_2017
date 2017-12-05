@@ -31,7 +31,7 @@ What is the checksum for the spreadsheet in your puzzle input?
  */
 
 fun parse(string: String) =
-                    if (string.isEmpty()) listOf<List<Int>>()
+                    if (string.isEmpty()) listOf()
                     else string.split("\n")
                         .filter { ! it.isBlank() }
                         .map {
@@ -51,7 +51,7 @@ class Day2Spec : Spek({
             val spreadsheet = ""
 
             it("should be empty list of lists") {
-                parse(spreadsheet) `should equal` listOf<List<Int>>()
+                parse(spreadsheet) `should equal` listOf()
             }
         }
         on("spreadsheet of one line with one integer") {

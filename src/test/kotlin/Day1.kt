@@ -29,7 +29,7 @@ What is the solution to your captcha?
 
 fun <E> List<E>.shiftLeft() = if (this.isEmpty()) this else this.drop(1) + this.first()
 
-fun CharSequence.splitToDigits() = if (this.isEmpty()) listOf<Int>()
+fun CharSequence.splitToDigits() = if (this.isEmpty()) listOf()
                                     else this.map { Character.getNumericValue(it) }
 
 fun captcha(list: List<Int>) = (list zip list.shiftLeft())
@@ -67,7 +67,7 @@ class Day1Spec : Spek({
         on("empty string") {
             val string = ""
             it("should return empty list") {
-                string.splitToDigits() `should equal` listOf<Int>()
+                string.splitToDigits() `should equal` listOf()
             }
         }
         on("string with one digit") {
