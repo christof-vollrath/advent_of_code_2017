@@ -42,7 +42,7 @@ In this example, the exit is reached in 5 steps.
 How many steps does it take to reach the exit?
 */
 
-fun execute(instructions: List<Int>) = buildSequence<Pair<Int,Int>> {
+fun execute(instructions: List<Int>) = buildSequence {
     val program = instructions.toMutableList()
     var pc = 0 // Program counter
     while(true) {
