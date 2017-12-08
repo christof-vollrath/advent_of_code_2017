@@ -114,12 +114,12 @@ fun findBottom(programs: List<Program>) = with(programs) {
 data class Tree(val name: String, val weight: Int, val subtrees: List<Tree> = listOf())
 
 fun findUnbalanced(tree: Tree): List<Triple<String, Int, Int>> {
-    if (tree.subtrees.size != 0) {
+    if (tree.subtrees.isNotEmpty()) {
         for(subtree in tree.subtrees) {
             val result = findUnbalanced(subtree) // depth first
             if (!result.isEmpty()) return result
         }
-        return buildSequence<Triple<String, Int, Int>> {
+        return buildSequence {
             var diffFound = false
             val weightFirst = sumWeight(tree.subtrees.first())
             for(subTree in tree.subtrees.drop(1)) {
@@ -140,8 +140,7 @@ fun findUnbalanced(tree: Tree): List<Triple<String, Int, Int>> {
 fun convert2Tree(programs: List<Program>) = with(programs) {
     val programMap = this.map { Pair(it.name, it) }.toMap()
     val bottom = findBottom(this)
-    val bottomProg = programMap[bottom]
-    if (bottomProg == null) throw IllegalArgumentException("Program $bottom not found")
+    val bottomProg = programMap[bottom] ?: throw IllegalArgumentException("Program $bottom not found")
     val subTrees = bottomProg.subprograms.map { convert2Tree(it, programMap ) }
     Tree(bottomProg.name, bottomProg.weight, subTrees)
 }
@@ -262,7 +261,7 @@ class Day7Spec : Spek({
     }
 
     describe("name of the bottom program") {
-        println(findBottom(parseInput(INPUT)))
+        println(findBottom(parseInput(exerciseInput)))
     }
 
     describe("find unbalanced programs in tree") {
@@ -270,7 +269,7 @@ class Day7Spec : Spek({
             val tree = Tree("jptl", 61)
 
             it("should be empty") {
-                findUnbalanced(tree) `should equal` listOf<Triple<String, Int, Int>>()
+                findUnbalanced(tree) `should equal` listOf()
             }
         }
         on("simple tree with unbalanced subnodes") {
@@ -364,12 +363,12 @@ class Day7Spec : Spek({
         }
     }
     describe("find program with wrong weights") {
-        println(findUnbalanced(convert2Tree(parseInput(INPUT))))
+        println(findUnbalanced(convert2Tree(parseInput(exerciseInput))))
     }
 
 })
 
-val INPUT =
+val exerciseInput =
         """
 wdysq (135) -> sxldvex, wiasj
 vjwuuft (33) -> inuci, neddz, rwamq
