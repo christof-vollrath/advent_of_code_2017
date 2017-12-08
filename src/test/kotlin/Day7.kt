@@ -112,28 +112,7 @@ fun findBottom(programs: List<Program>) = with(programs) {
 }
 
 data class Tree(val name: String, val weight: Int, val subtrees: List<Tree> = listOf())
-/*
-fun findUnbalanced(tree: Tree): List<Triple<String, Int, Int>> = buildSequence<Triple<String, Int, Int>> {
-    // TODO Depth-First search
-    if (tree.subtrees.size != 0) {
-        var diffFound = false
-        val weightFirst = sumWeight(tree.subtrees.first())
-        for(subTree in tree.subtrees.drop(1)) {
-            val subTreeWeight = sumWeight(subTree)
-            if (subTreeWeight != weightFirst) {
-                if (! diffFound) {
-                    yield(Triple(tree.subtrees.first().name, tree.subtrees.first().weight, weightFirst))
-                    diffFound = true
-                }
-                yield(Triple(subTree.name, subTree.weight, subTreeWeight))
-            }
-        }
-        tree.subtrees.forEach {
-            findUnbalanced(it).forEach { yield(it)}
-        }
-    }
-}.toList()
-*/
+
 fun findUnbalanced(tree: Tree): List<Triple<String, Int, Int>> {
     if (tree.subtrees.size != 0) {
         for(subtree in tree.subtrees) {
