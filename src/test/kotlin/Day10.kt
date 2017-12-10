@@ -3,19 +3,22 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.data_driven.data
+import org.jetbrains.spek.data_driven.on as onData
+import kotlin.coroutines.experimental.buildSequence
 
 /*
 --- Day 10: Knot Hash ---
 
-You come across some programs that are trying to implement a software emulation of a hash based on knot-tying.
-The hash these programs are implementing isn't very strong,
+You come across some programs that are trying to implement a software emulation of a hashStep based on knot-tying.
+The hashStep these programs are implementing isn't very strong,
 but you decide to help them anyway.
 You make a mental note to remind the Elves later not to invent their own cryptographic functions.
 
-This hash function simulates tying a knot in a circle of string with 256 marks on it.
+This hashStep function simulates tying a knot in a circle of string with 256 marks on it.
 Based on the input to be hashed, the function repeatedly selects a span of string,
 brings the ends together, and gives the span a half-twist to reverse the order of the marks within it.
-After doing this many times, the order of the marks is used to build the resulting hash.
+After doing this many times, the order of the marks is used to build the resulting hashStep.
 
   4--5   pinch   4  5           4   1
  /    \  5,0,1  / \/ \  twist  / \ / \
@@ -63,6 +66,67 @@ However, you should instead use the standard list size of 256 (with values 0 to 
 and the sequence of lengths in your puzzle input.
 Once this process is complete, what is the result of multiplying the first two numbers in the list?
 
+--- Part Two ---
+
+The logic you've constructed forms a single round of the Knot Hash algorithm;
+running the full thing requires many of these rounds. Some input and output processing is also required.
+
+First, from now on, your input should be taken not as a list of numbers,
+but as a string of bytes instead.
+Unless otherwise specified, convert characters to bytes using their ASCII codes.
+This will allow you to handle arbitrary ASCII strings,
+and it also ensures that your input lengths are never larger than 255.
+For example, if you are given 1,2,3, you should convert it to the ASCII codes for each character: 49,44,50,44,51.
+
+Once you have determined the sequence of lengths to use,
+add the following lengths to the end of the sequence: 17, 31, 73, 47, 23.
+For example, if you are given 1,2,3, your final sequence of lengths should be 49,44,50,44,51,17,31,73,47,23
+(the ASCII codes from the input string combined with the standard length suffix values).
+
+Second, instead of merely running one round like you did above,
+run a total of 64 rounds, using the same length sequence in each round.
+The current position and skip size should be preserved between rounds.
+For example, if the previous example was your first round,
+you would start your second round with the same length sequence (3, 4, 1, 5, 17, 31, 73, 47, 23,
+now assuming they came from ASCII codes and include the suffix),
+but start with the previous round's current position (4) and skip size (4).
+
+Once the rounds are complete, you will be left with the numbers from 0 to 255 in some order,
+called the sparse hashStep.
+Your next task is to reduce these to a list of only 16 numbers called the dense hashStep.
+To do this, use numeric bitwise XOR to combine each consecutive block of 16 numbers in the sparse hashStep
+(there are 16 such blocks in a list of 256 numbers).
+So, the first element in the dense hashStep is the first sixteen elements of the sparse hashStep XOR'd together,
+the second element in the dense hashStep is the second sixteen elements of the sparse hashStep XOR'd together, etc.
+
+For example, if the first sixteen elements of your sparse hashStep are as shown below,
+and the XOR operator is ^, you would calculate the first output number like this:
+
+65 ^ 27 ^ 9 ^ 1 ^ 4 ^ 3 ^ 40 ^ 50 ^ 91 ^ 7 ^ 6 ^ 0 ^ 2 ^ 5 ^ 68 ^ 22 = 64
+
+Perform this operation on each of the sixteen blocks of sixteen numbers
+in your sparse hashStep to determine the sixteen numbers in your dense hashStep.
+
+Finally, the standard way to represent a Knot Hash is as a single hexadecimal string;
+the final output is the dense hashStep in hexadecimal notation.
+Because each number in your dense hashStep will be between 0 and 255 (inclusive),
+always represent each number as two hexadecimal digits (including a leading zero as necessary).
+So, if your first three numbers are 64, 7, 255,
+they correspond to the hexadecimal numbers 40, 07, ff, and so the first six characters of the hashStep would be 4007ff.
+Because every Knot Hash is sixteen such numbers,
+the hexadecimal representation is always 32 hexadecimal digits (0-f) long.
+
+Here are some example hashes:
+
+The empty string becomes a2582a3a0e66e6e86e3812dcb672a272.
+AoC 2017 becomes 33efeb34ea91902bb2f59c9920caa6cd.
+1,2,3 becomes 3efbe78a8d82f29979031a4aa0b16a9d.
+1,2,4 becomes 63960835bcdc130f0b66d7ff4f6a5a8e.
+
+Treating your puzzle input as a string of ASCII characters, what is the Knot Hash of your puzzle input?
+Ignore any leading or trailing whitespace you might encounter.
+
+
  */
 
 fun indexCircula(index: Int, length: Int) = index % length
@@ -76,17 +140,47 @@ fun <T> MutableList<T>.setCircula(start: Int, values: List<T>) = this.apply {
 
 fun incrCircula(pos: Int, incr: Int, length: Int) = (pos + incr) % length
 
-fun hash(list: List<Int>, lengths: List<Int>): List<Int> {
+fun hashStep(list: List<Int>, lengths: List<Int>, repeat: Int = 1): List<Int> {
     var pos = 0
+    var skip = 0
     val result = list.toMutableList()
-    lengths.forEachIndexed { skip, length ->
-        val toBeReversed = result.subListCircula(pos, pos + length)
-        result.setCircula(pos, toBeReversed.reversed())
-        pos = incrCircula(pos, skip + length,  list.size)
+    (1..repeat).forEach {
+        lengths.forEach { length ->
+            val toBeReversed = result.subListCircula(pos, pos + length)
+            result.setCircula(pos, toBeReversed.reversed())
+            pos = incrCircula(pos, skip + length,  list.size)
+            skip++
+        }
     }
     return result
 }
-fun hash(range: IntRange, lengths: List<Int>) = hash(range.toList(), lengths)
+fun hashStep(range: IntRange, lengths: List<Int>, repeat: Int = 1) = hashStep(range.toList(), lengths, repeat)
+
+fun asciiToList(string: String) = string.toList().map { it.toInt() }
+
+fun reduceBlock(block: List<Int>) = block.reduce { x, y -> x xor y }
+
+fun denseHash(hash: List<Int>) = buildSequence {
+    for (i in 0..15) {
+        val block = hash.subList(i * 16, i * 16 + 16)
+        yield(reduceBlock(block))
+    }
+}.toList()
+
+fun toHex(list: List<Int>) = list
+        .map {
+            val str = it.toString(16)
+            if (str.length == 1) "0" + str
+            else str
+        }
+        .joinToString("")
+
+fun hash(input: String): String {
+    val inputList = asciiToList(input)
+    val list = inputList + listOf(17, 31, 73, 47, 23) // add seed
+    val hash = hashStep(0..255, list, 64)
+    return toHex(denseHash(hash))
+}
 
 class Day10Spec : Spek({
     describe("incrCircula") {
@@ -165,31 +259,96 @@ class Day10Spec : Spek({
             }
         }
     }
-    describe("hash") {
+    describe("hashStep") {
         on("list 0, 1, 2, 3, 4 and length 3") {
             it("2, 1, 0, 3, 4") {
-                hash(listOf(0, 1, 2, 3, 4), listOf(3)) `should equal` listOf(2, 1, 0, 3, 4)
+                hashStep(listOf(0, 1, 2, 3, 4), listOf(3)) `should equal` listOf(2, 1, 0, 3, 4)
             }
         }
         on("list 0, 1, 2, 3, 4 and length 3, 4") {
             it("4, 3, 0, 1, 2") {
-                hash(listOf(0, 1, 2, 3, 4), listOf(3, 4)) `should equal` listOf(4, 3, 0, 1, 2)
+                hashStep(listOf(0, 1, 2, 3, 4), listOf(3, 4)) `should equal` listOf(4, 3, 0, 1, 2)
             }
         }
         on("range 0..4 and length 3, 4") {
             it("4, 3, 0, 1, 2") {
-                hash(0..4, listOf(3, 4)) `should equal` listOf(4, 3, 0, 1, 2)
+                hashStep(0..4, listOf(3, 4)) `should equal` listOf(4, 3, 0, 1, 2)
             }
         }
     }
-    describe("hash from input lengths") {
+
+    describe("hashStep from input") {
         on("input lengths") {
-            val result = hash(0..255, day10Lengths)
+            val result = hashStep(0..255, day10Input.split(",").map { it.toInt() })
             println(result)
             println(result[0] * result[1])
         }
-
     }
+
+    describe("ascii string to list"){
+        on("empty string") {
+            it("should become empty list") {
+                asciiToList("") `should equal` listOf()
+            }
+        }
+        //
+        on("""string "1,2,3" """) {
+            it("should become 49,44,50,44,51") {
+                asciiToList("1,2,3") `should equal` listOf(49,44,50,44,51)
+            }
+        }
+    }
+    describe("reduce block") {
+        on("block 65, 27, 9, 1, 4, 3, 40, 50, 91, 7, 6, 0, 2, 5, 68, 22") {
+            val block = listOf(65, 27, 9, 1, 4, 3, 40, 50, 91, 7, 6, 0, 2, 5, 68, 22)
+            it("should be reduced to 64") {
+                reduceBlock(block) `should equal` 64
+            }
+        }
+    }
+    describe("dense hash") {
+        on("16 blocks") {
+            val block = listOf(65, 27, 9, 1, 4, 3, 40, 50, 91, 7, 6, 0, 2, 5, 68, 22)
+            val hash = block.toMutableList()
+            for (i in 1..15) hash += block
+            hash.size `should equal` 256
+            it("should get dense hash") {
+                denseHash(hash) `should equal` listOf(64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64)
+            }
+        }
+    }
+    describe("to hex") {
+        on("64, 7, 255") {
+            val list = listOf(64, 7, 255)
+            it("should become 4007ff") {
+                toHex(list) `should equal` "4007ff"
+            }
+        }
+    }
+
+    describe("hash") {
+        val testData = arrayOf(
+                //         string               result
+                //--|-------------|----------------------------------------------
+                data("",         "a2582a3a0e66e6e86e3812dcb672a272"),
+                data("AoC 2017", "33efeb34ea91902bb2f59c9920caa6cd"),
+                data("1,2,3",    "3efbe78a8d82f29979031a4aa0b16a9d"),
+                data("1,2,4",    "63960835bcdc130f0b66d7ff4f6a5a8e")
+        )
+        onData("input %s", with = *testData) { input, expected ->
+            it("returns $expected") {
+                hash(input) `should equal` expected
+            }
+        }
+    }
+
+    describe("dense hash from input") {
+        on("input") {
+            println(hash(day10Input))
+        }
+    }
+
 })
 
-val day10Lengths = listOf(63,144,180,149,1,255,167,84,125,65,188,0,2,254,229,24)
+
+val day10Input = "63,144,180,149,1,255,167,84,125,65,188,0,2,254,229,24"
