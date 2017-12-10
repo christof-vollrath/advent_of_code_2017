@@ -50,17 +50,13 @@ the highest i ever held was 10 (in register c after the third instruction was ev
 
  */
 
-// TODO use str.toInt instead of Integer.parseInt
-// TODO use correct spek style (describe, given)
-// TODO read test data from file
-
 sealed class Condition {
     abstract val register: String
     abstract val i: Int
     fun evaluate(registers: Map<String, Int>): Boolean = with(registers[register]) {
         evaluate(this ?: 0)
     }
-    abstract fun evaluate(value: Int): Boolean
+    abstract fun evaluate(registerValue: Int): Boolean
 }
 data class Greater(override val register: String, override val i: Int) : Condition() {
     override fun evaluate(registerValue: Int) = registerValue > i
@@ -89,7 +85,7 @@ sealed class Instruction {
         if (condition.evaluate(this))
             this[register] = calculate(this[register] ?: 0)
     }
-    abstract fun calculate(value: Int): Int
+    abstract fun calculate(registerValue: Int): Int
 }
 
 data class IncrInstruction(override val register: String, override val i: Int, override val condition: Condition) : Instruction() {
