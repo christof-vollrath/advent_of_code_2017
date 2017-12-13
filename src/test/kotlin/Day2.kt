@@ -3,8 +3,12 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.data_driven.data
+import org.jetbrains.spek.data_driven.on as onData
 
 /*
+--- Day 2: Corruption Checksum ---
+
 As you walk through the door, a glowing humanoid shape yells in your direction.
 "You there! Your state appears to be idle.
 Come help us repair the corruption in this spreadsheet - if we take another millisecond,
@@ -28,21 +32,52 @@ In this example, the spreadsheet's checksum would be 8 + 4 + 6 = 18.
 
 What is the checksum for the spreadsheet in your puzzle input?
 
+Your puzzle answer was 44887.
+
+
+--- Part Two ---
+
+"Great work; looks like we're on the right track after all. Here's a star for your effort."
+However, the program seems a little worried. Can programs be worried?
+
+"Based on what we're seeing, it looks like all the User wanted is some information
+about the evenly divisible values in the spreadsheet.
+Unfortunately, none of us are equipped for that kind of calculation - most of us specialize in bitwise operations."
+
+It sounds like the goal is to find the only two numbers in each row where one evenly divides the other
+- that is, where the result of the division operation is a whole number.
+They would like you to find those numbers on each line, divide them, and add up each line's result.
+
+For example, given the following spreadsheet:
+
+5 9 2 8
+9 4 7 3
+3 8 6 5
+
+In the first row, the only two numbers that evenly divide are 8 and 2; the result of this division is 4.
+In the second row, the two numbers are 9 and 3; the result is 3.
+In the third row, the result is 2.
+In this example, the sum of the results would be 4 + 3 + 2 = 9.
+
+What is the sum of each row's result in your puzzle input?
+
+Your puzzle answer was 242.
+
  */
 
 fun parse(string: String) =
-                    if (string.isEmpty()) listOf()
-                    else string.split("\n")
-                        .filter { ! it.isBlank() }
-                        .map {
-                            it.split("""\s+""".toRegex())
-                                .filter { ! it.isBlank() }
-                                .map { Integer.parseInt(it) }
-                        }
+    if (string.isEmpty()) listOf()
+    else string.split("\n")
+        .filter { ! it.isBlank() }
+        .map {
+            it.split("""\s+""".toRegex())
+                .filter { ! it.isBlank() }
+                .map { Integer.parseInt(it) }
+        }
 
 
-fun checksum(spreadsheet: String) = parse(spreadsheet)
-        .map { (it.max()?:0) - (it.min()?:0) }
+fun checksum(spreadsheet: String, algo: (List<Int>) -> Int = { (it.max()?:0) - (it.min()?:0) }) = parse(spreadsheet)
+        .map(algo)
         .sum()
 
 class Day2Spec : Spek({
@@ -124,9 +159,91 @@ class Day2Spec : Spek({
         }
     }
 
-    describe("my checksum") {
-        println(checksum(
+    describe("checksum") {
+        println("Checksum: ${checksum(day2Input)}")
+    }
+
+    describe("evenly divides two numbers") {
+        val testData = arrayOf(
+                //       x      y   result
+                //--|-----|-------|--------------
+                data( 4,  2, true),
+                data( 4,  3, false),
+                data( 9,  3, true),
+                data( 3,  6, true),
+                data( 2,  2, false)
+        )
+        onData("input %s", with = *testData) { x, y, expected ->
+            it("returns $expected") {
+                evenlyDivides(x, y) `should equal` expected
+            }
+        }
+    }
+
+    describe("evenly dividing two numbers") {
+        val testData = arrayOf(
+                //       list   result
+                //--|-------------|--------------
+                data(listOf(5, 9, 2, 8), Pair(2, 8)),
+                data(listOf(9, 4, 7, 3), Pair(9, 3)),
+                data(listOf(3, 8, 6, 5), Pair(3, 6))
+        )
+        onData("input %s", with = *testData) { list, expected ->
+            it("returns $expected") {
+                evenlyDividing(list) `should equal` expected
+            }
+        }
+    }
+
+    describe("checksum of spreadsheet evenly divide") {
+        on("spreadsheet example") {
+            val spreadsheet = """
+                5 9 2 8
+                9 4 7 3
+                3 8 6 5
                 """
+            it("should be max - min") {
+                checksum(spreadsheet) { evenlyDividingChecksum(it) } `should equal` 9
+            }
+        }
+    }
+
+    describe("evenly dividing checksum") {
+        println("Evenly Dividing Checksum: ${checksum(day2Input){ evenlyDividingChecksum(it) }}")
+    }
+
+
+})
+
+fun evenlyDividing(list: List<Int>): Pair<Int, Int>? =
+    if (list.isNotEmpty()) {
+        val first = list.first()
+        val tail = list.drop(1)
+        tail.forEach {
+            if (evenlyDivides(first, it))
+                return Pair(first, it)
+        }
+        evenlyDividing(tail)
+    } else null
+
+
+fun evenlyDivides(x: Int, y: Int) =
+    when {
+        (x > y) -> x % y == 0
+        (x < y) -> y % x == 0
+        else -> false
+    }
+
+fun evenlyDividingChecksum(list: List<Int>) = with(evenlyDividing(list)) {
+    if (this != null) {
+        val x = this.first
+        val y = this.second
+        if (x > y)  x/y else y/x
+    } else 0
+}
+
+val day2Input =
+        """
 409	194	207	470	178	454	235	333	511	103	474	293	525	372	408	428
 4321	2786	6683	3921	265	262	6206	2207	5712	214	6750	2742	777	5297	3764	167
 3536	2675	1298	1069	175	145	706	2614	4067	4377	146	134	1930	3850	213	4151
@@ -144,10 +261,4 @@ class Day2Spec : Spek({
 489	732	57	75	61	797	266	593	324	475	733	737	113	68	267	141
 3858	202	1141	3458	2507	239	199	4400	3713	3980	4170	227	3968	1688	4352	4168
 """
-        ))
-    }
-
-
-})
-
 
