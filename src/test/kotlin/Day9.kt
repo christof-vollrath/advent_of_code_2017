@@ -106,7 +106,7 @@ fun Sequence<Char>.skipGarbage(state: State): Sequence<Char> {
     return this.filter {
         if (state.escape) {
             state.escape = false
-            if (state.garbage) false else true
+            !state.garbage
         } else {
             when(it) {
                 '!' -> {
