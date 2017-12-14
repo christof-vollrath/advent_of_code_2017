@@ -4,6 +4,7 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.xdescribe
 
 /*
 --- Day 14: Disk Defragmentation ---
@@ -54,6 +55,35 @@ Given your actual key string, how many squares are used?
 Your puzzle input is vbqugkhl.
 
 Your puzzle answer was 8148.
+
+--- Part Two ---
+
+Now, all the defragmenter needs to know is the number of regions.
+A region is a group of used squares that are all adjacent, not including diagonals.
+Every used square is in exactly one region:
+lone used squares form their own isolated regions,
+while several adjacent squares all count as a single region.
+
+In the example above, the following nine regions are visible, each marked with a distinct digit:
+
+11.2.3..-->
+.1.2.3.4
+....5.6.
+7.8.55.9
+.88.5...
+88..5..8
+.8...8..
+88.8.88.-->
+|      |
+V      V
+
+Of particular interest is the region marked 8; while it does not appear contiguous in this small view,
+all of the squares marked 8 are connected when considering the whole 128x128 grid.
+In total, in this example, 1242 regions are present.
+
+How many regions are present given your key string?
+
+Your puzzle answer was 1180.
 
  */
 
@@ -112,10 +142,118 @@ class Day14Spec : Spek({
             val disk = createHashs(rowKeys)
             val binHashes = toBinList(disk)
             val numberOfOnes = binHashes.flatMap { it.split("").filter { !it.isBlank() }}.filter { it == "1"}.size
-            println(numberOfOnes)
+            println("Used: $numberOfOnes")
         }
     }
+
+    describe("find regions") {
+        on("matrix with marked used regions") {
+            val matrix = arrayOf(
+                    intArrayOf(-1,-1, 0,-1, 0,-1, 0, 0),
+                    intArrayOf( 0,-1, 0,-1, 0,-1, 0,-1),
+                    intArrayOf( 0, 0, 0, 0,-1, 0,-1, 0),
+                    intArrayOf(-1, 0,-1, 0,-1,-1, 0,-1),
+                    intArrayOf( 0,-1,-1, 0,-1, 0, 0, 0),
+                    intArrayOf(-1,-1, 0, 0,-1, 0, 0, 0),
+                    intArrayOf(-1, 0, 0, 0, 0, 0, 0, 0),
+                    intArrayOf(-1,-1, 0, 0, 0, 0, 0, 0)
+            )
+
+            val regions = findRegions(matrix)
+            it("should have 8 regions") {
+                //println(regions.second.map {it.joinToString(", ")}.joinToString("\n"))
+                regions.first `should equal` 9
+                regions.second `should equal` arrayOf(
+                        intArrayOf( 1, 1, 0, 2, 0, 3, 0, 0),
+                        intArrayOf( 0, 1, 0, 2, 0, 3, 0, 4),
+                        intArrayOf( 0, 0, 0, 0, 5, 0, 6, 0),
+                        intArrayOf( 7, 0, 8, 0, 5, 5, 0, 9),
+                        intArrayOf( 0, 8, 8, 0, 5, 0, 0, 0),
+                        intArrayOf( 8, 8, 0, 0, 5, 0, 0, 0),
+                        intArrayOf( 8, 0, 0, 0, 0, 0, 0, 0),
+                        intArrayOf( 8, 8, 0, 0, 0, 0, 0, 0)
+                )
+
+            }
+        }
+    }
+    describe("convert to matrix") {
+        on("some row keys") {
+            val rowKeys = listOf(
+                "11010100",
+                "01010101",
+                "00001010",
+                "10101101",
+                "01101000",
+                "11001000",
+                "10000000",
+                "11000000"
+            )
+            val matrix = convert2Matrix(rowKeys)
+            it("should become a matrix") {
+                matrix `should equal`     arrayOf(
+                        intArrayOf(-1,-1, 0,-1, 0,-1, 0, 0),
+                        intArrayOf( 0,-1, 0,-1, 0,-1, 0,-1),
+                        intArrayOf( 0, 0, 0, 0,-1, 0,-1, 0),
+                        intArrayOf(-1, 0,-1, 0,-1,-1, 0,-1),
+                        intArrayOf( 0,-1,-1, 0,-1, 0, 0, 0),
+                        intArrayOf(-1,-1, 0, 0,-1, 0, 0, 0),
+                        intArrayOf(-1, 0, 0, 0, 0, 0, 0, 0),
+                        intArrayOf(-1,-1, 0, 0, 0, 0, 0, 0)
+                )
+            }
+        }
+    }
+    describe("regions in example disk") {
+        on("flqrgnkx") {
+            val key = "flqrgnkx"
+            val binHashes = toBinList(createHashs(createRowKeys(key)))
+            val regions = countRegions(binHashes)
+            it("should have 1242 regions") {
+                regions `should equal` 1242
+            }
+        }
+    }
+    describe("regions in exercise") {
+        on("input") {
+            val key = "vbqugkhl"
+            val binHashes = toBinList(createHashs(createRowKeys(key)))
+            val regions = countRegions(binHashes)
+            println("Regions: $regions")
+        }
+    }
+
+
 })
+
+fun countRegions(binHashes: List<String>) = countRegions(convert2Matrix(binHashes))
+fun countRegions(regions: Array<IntArray>) = findRegions(regions).first
+
+fun findRegions(regions: Array<IntArray>): Pair<Int, Array<IntArray>> {
+    var i = 1
+    regions.forEachIndexed { y, row ->
+        row.forEachIndexed { x, _ ->
+            if (findRegion(i, x, y, regions)) i++
+        }
+    }
+    return Pair(i-1, regions)
+}
+
+fun findRegion(i: Int, x: Int, y: Int, regions: Array<IntArray>): Boolean =
+        if (x < 0 || x >= regions.size || y < 0 || y >= regions[x].size) false
+        else if (regions[y][x] == -1) {
+            regions[y][x] = i // New regions found
+            findRegion(i, x-1, y, regions) // Find adjacent neighbours
+            findRegion(i, x+1, y, regions)
+            findRegion(i, x, y-1, regions)
+            findRegion(i, x, y+1, regions)
+            true
+        } else false
+
+fun convert2Matrix(binHashes: List<String>): Array<IntArray> =
+    binHashes.map {
+        it.split("").filter { !it.isBlank() }.map { if (it == "1") -1 else 0 }.toIntArray()
+    }.toTypedArray()
 
 fun createRowKeys(key: String) = (0..127).map { "$key-$it"}
 fun createHashs(rowKeys: List<String>) = rowKeys.map { hash(it, 256)}
