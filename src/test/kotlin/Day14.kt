@@ -1,0 +1,130 @@
+import org.amshove.kluent.`should equal`
+import org.amshove.kluent.`should start with`
+import org.jetbrains.spek.api.Spek
+import org.jetbrains.spek.api.dsl.describe
+import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.on
+
+/*
+--- Day 14: Disk Defragmentation ---
+
+Suddenly, a scheduled job activates the system's disk defragmenter.
+Were the situation different, you might sit and watch it for a while, but today,
+you just don't have that kind of time.
+It's soaking up valuable system resources that are needed elsewhere,
+and so the only option is to help it finish its task as soon as possible.
+
+The disk in question consists of a 128x128 grid; each square of the grid is either free or used.
+On this disk, the state of the grid is tracked by the bits in a sequence of knot hashes.
+
+A total of 128 knot hashes are calculated, each corresponding to a single row in the grid;
+each hash contains 128 bits which correspond to individual grid squares.
+Each bit of a hash indicates whether that square is free (0) or used (1).
+
+The hash inputs are a key string (your puzzle input), a dash, and a number from 0 to 127 corresponding to the row.
+For example, if your key string were flqrgnkx,
+then the first row would be given by the bits of the knot hash of flqrgnkx-0,
+the second row from the bits of the knot hash of flqrgnkx-1,
+and so on until the last row, flqrgnkx-127.
+
+The output of a knot hash is traditionally represented by 32 hexadecimal digits;
+each of these digits correspond to 4 bits, for a total of 4 * 32 = 128 bits.
+To convert to bits, turn each hexadecimal digit to its equivalent binary value, high-bit first:
+0 becomes 0000, 1 becomes 0001, e becomes 1110, f becomes 1111, and so on; a hash that begins with a0c2017...
+in hexadecimal would begin with 10100000110000100000000101110000... in binary.
+
+Continuing this process, the first 8 rows and columns for key flqrgnkx appear as follows,
+using # to denote used squares, and . to denote free ones:
+
+##.#.#..-->
+.#.#.#.#
+....#.#.
+#.#.##.#
+.##.#...
+##..#..#
+.#...#..
+##.#.##.-->
+|      |
+V      V
+
+In this example, 8108 squares are used across the entire 128x128 grid.
+
+Given your actual key string, how many squares are used?
+
+Your puzzle input is vbqugkhl.
+
+Your puzzle answer was 8148.
+
+ */
+
+class Day14Spec : Spek({
+    describe("list<Int> to bin") {
+        on("example binary code") {
+            val input = listOf(0xa0, 0xc2, 0x01, 0x70)
+
+            it("should be the right binary") {
+                input.toBin() `should equal` "10100000110000100000000101110000"
+            }
+        }
+    }
+    describe("example disk") {
+        on("flqrgnkx") {
+            val key = "flqrgnkx"
+            val rowKeys = createRowKeys(key)
+            val disk = createHashs(rowKeys)
+            val binHashes = toBinList(disk)
+            it("should have the correct starting values") {
+                binHashes[0] `should start with` "11010100"
+                binHashes[1] `should start with` "01010101"
+                binHashes[2] `should start with` "00001010"
+                binHashes[3] `should start with` "10101101"
+                binHashes[4] `should start with` "01101000"
+                binHashes[5] `should start with` "11001001"
+                binHashes[6] `should start with` "01000100"
+                binHashes[7] `should start with` "11010110"
+            }
+        }
+    }
+    describe("createRowKeys") {
+        on("flqrgnkx") {
+            val key = "flqrgnkx"
+            val rowKeys = createRowKeys(key)
+            it("should start with flqrgnkx-0 and end with flqrgnkx-127 and have size 128") {
+                rowKeys.size `should equal` 128
+                rowKeys[0] `should equal` "flqrgnkx-0"
+                rowKeys[127] `should equal` "flqrgnkx-127"
+            }
+        }
+    }
+    describe("createHashs") {
+        on("list with flqrgnkx-0") {
+            val disk = createHashs(listOf("flqrgnkx-0"))
+            val binHashes = toBinList(disk)
+            it("should start with ##.#.#..") {
+                binHashes[0] `should start with` "11010100"
+            }
+        }
+    }
+    describe("exercise") {
+        on("input") {
+            val key = "vbqugkhl"
+            val rowKeys = createRowKeys(key)
+            val disk = createHashs(rowKeys)
+            val binHashes = toBinList(disk)
+            val numberOfOnes = binHashes.flatMap { it.split("").filter { !it.isBlank() }}.filter { it == "1"}.size
+            println(numberOfOnes)
+        }
+    }
+})
+
+fun createRowKeys(key: String) = (0..127).map { "$key-$it"}
+fun createHashs(rowKeys: List<String>) = rowKeys.map { hash(it, 256)}
+fun toBinList(hashes: List<List<Int>>) = hashes.map { it.toBin() }
+
+
+fun List<Int>.toBin() =
+    this.map {
+        it.toString(2).padStart(8, '0')
+    }
+    .joinToString("")
+

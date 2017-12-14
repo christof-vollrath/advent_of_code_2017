@@ -66,6 +66,9 @@ However, you should instead use the standard list size of 256 (with values 0 to 
 and the sequence of lengths in your puzzle input.
 Once this process is complete, what is the result of multiplying the first two numbers in the list?
 
+Your puzzle answer was 4480.
+
+
 --- Part Two ---
 
 The logic you've constructed forms a single round of the Knot Hash algorithm;
@@ -126,6 +129,7 @@ AoC 2017 becomes 33efeb34ea91902bb2f59c9920caa6cd.
 Treating your puzzle input as a string of ASCII characters, what is the Knot Hash of your puzzle input?
 Ignore any leading or trailing whitespace you might encounter.
 
+Your puzzle answer was c500ffe015c83b60fad2e4b7d59dabc4.
 
  */
 
@@ -161,25 +165,23 @@ fun asciiToList(string: String) = string.toList().map { it.toInt() }
 fun reduceBlock(block: List<Int>) = block.reduce { x, y -> x xor y }
 
 fun denseHash(hash: List<Int>) = buildSequence {
-    for (i in 0..15) {
+    for (i in 0..(hash.size / 16 -1)) {
         val block = hash.subList(i * 16, i * 16 + 16)
         yield(reduceBlock(block))
     }
 }.toList()
 
-fun toHex(list: List<Int>) = list
-        .map {
-            val str = it.toString(16)
-            if (str.length == 1) "0" + str
-            else str
+fun List<Int>.toHex() =
+        this.map {
+            it.toString(16).padStart(2, '0')
         }
         .joinToString("")
 
-fun hash(input: String): String {
+fun hash(input: String, length: Int = 256): List<Int> {
     val inputList = asciiToList(input)
     val list = inputList + listOf(17, 31, 73, 47, 23) // add seed
-    val hash = hashStep(0..255, list, 64)
-    return toHex(denseHash(hash))
+    val hash = hashStep(0..(length-1), list, 64)
+    return denseHash(hash)
 }
 
 class Day10Spec : Spek({
@@ -321,7 +323,7 @@ class Day10Spec : Spek({
         on("64, 7, 255") {
             val list = listOf(64, 7, 255)
             it("should become 4007ff") {
-                toHex(list) `should equal` "4007ff"
+                list.toHex() `should equal` "4007ff"
             }
         }
     }
@@ -337,14 +339,14 @@ class Day10Spec : Spek({
         )
         onData("input %s", with = *testData) { input, expected ->
             it("returns $expected") {
-                hash(input) `should equal` expected
+                hash(input).toHex() `should equal` expected
             }
         }
     }
 
     describe("dense hash from input") {
         on("input") {
-            println(hash(day10Input))
+            println(hash(day10Input).toHex())
         }
     }
 
