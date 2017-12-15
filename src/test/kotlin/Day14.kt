@@ -113,7 +113,7 @@ fun findRegion(i: Int, x: Int, y: Int, regions: Array<IntArray>): Boolean =
 
 fun convert2Matrix(binHashes: List<String>): Array<IntArray> =
         binHashes.map {
-            it.split("").filter { !it.isBlank() }.map { if (it == "1") -1 else 0 }.toIntArray()
+            it.toCharArray().toList().map { if (it == '1') -1 else 0 }.toIntArray()
         }.toTypedArray()
 
 fun createRowKeys(key: String) = (0..127).map { "$key-$it"}
@@ -181,7 +181,7 @@ class Day14Spec : Spek({
             val rowKeys = createRowKeys(key)
             val disk = createHashs(rowKeys)
             val binHashes = toBinList(disk)
-            val numberOfOnes = binHashes.flatMap { it.split("").filter { !it.isBlank() }}.filter { it == "1"}.size
+            val numberOfOnes = binHashes.flatMap { it.toCharArray().toList()}.filter { it == '1'}.size
             println("Used: $numberOfOnes")
         }
     }
