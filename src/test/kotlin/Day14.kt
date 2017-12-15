@@ -87,6 +87,46 @@ Your puzzle answer was 1180.
 
  */
 
+fun countRegions(binHashes: List<String>) = countRegions(convert2Matrix(binHashes))
+fun countRegions(regions: Array<IntArray>) = findRegions(regions).first
+
+fun findRegions(regions: Array<IntArray>): Pair<Int, Array<IntArray>> {
+    var i = 1
+    regions.forEachIndexed { y, row ->
+        row.forEachIndexed { x, _ ->
+            if (findRegion(i, x, y, regions)) i++
+        }
+    }
+    return Pair(i-1, regions)
+}
+
+fun findRegion(i: Int, x: Int, y: Int, regions: Array<IntArray>): Boolean =
+        if (x < 0 || x >= regions.size || y < 0 || y >= regions[x].size) false
+        else if (regions[y][x] == -1) {
+            regions[y][x] = i // New regions found
+            findRegion(i, x-1, y, regions) // Find adjacent neighbours
+            findRegion(i, x+1, y, regions)
+            findRegion(i, x, y-1, regions)
+            findRegion(i, x, y+1, regions)
+            true
+        } else false
+
+fun convert2Matrix(binHashes: List<String>): Array<IntArray> =
+        binHashes.map {
+            it.split("").filter { !it.isBlank() }.map { if (it == "1") -1 else 0 }.toIntArray()
+        }.toTypedArray()
+
+fun createRowKeys(key: String) = (0..127).map { "$key-$it"}
+fun createHashs(rowKeys: List<String>) = rowKeys.map { hash(it, 256)}
+fun toBinList(hashes: List<List<Int>>) = hashes.map { it.toBin() }
+
+
+fun List<Int>.toBin() =
+        this.map {
+            it.toString(2).padStart(8, '0')
+        }
+                .joinToString("")
+
 class Day14Spec : Spek({
     describe("list<Int> to bin") {
         on("example binary code") {
@@ -225,44 +265,3 @@ class Day14Spec : Spek({
 
 
 })
-
-fun countRegions(binHashes: List<String>) = countRegions(convert2Matrix(binHashes))
-fun countRegions(regions: Array<IntArray>) = findRegions(regions).first
-
-fun findRegions(regions: Array<IntArray>): Pair<Int, Array<IntArray>> {
-    var i = 1
-    regions.forEachIndexed { y, row ->
-        row.forEachIndexed { x, _ ->
-            if (findRegion(i, x, y, regions)) i++
-        }
-    }
-    return Pair(i-1, regions)
-}
-
-fun findRegion(i: Int, x: Int, y: Int, regions: Array<IntArray>): Boolean =
-        if (x < 0 || x >= regions.size || y < 0 || y >= regions[x].size) false
-        else if (regions[y][x] == -1) {
-            regions[y][x] = i // New regions found
-            findRegion(i, x-1, y, regions) // Find adjacent neighbours
-            findRegion(i, x+1, y, regions)
-            findRegion(i, x, y-1, regions)
-            findRegion(i, x, y+1, regions)
-            true
-        } else false
-
-fun convert2Matrix(binHashes: List<String>): Array<IntArray> =
-    binHashes.map {
-        it.split("").filter { !it.isBlank() }.map { if (it == "1") -1 else 0 }.toIntArray()
-    }.toTypedArray()
-
-fun createRowKeys(key: String) = (0..127).map { "$key-$it"}
-fun createHashs(rowKeys: List<String>) = rowKeys.map { hash(it, 256)}
-fun toBinList(hashes: List<List<Int>>) = hashes.map { it.toBin() }
-
-
-fun List<Int>.toBin() =
-    this.map {
-        it.toString(2).padStart(8, '0')
-    }
-    .joinToString("")
-
