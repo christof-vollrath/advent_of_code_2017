@@ -5,6 +5,8 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 
 /*
+--- Day 4: High-Entropy Passphrases ---
+
 A new system policy has been put in place that requires all accounts to use a passphrase instead of simply a password.
 A passphrase consists of a series of words (lowercase letters) separated by spaces.
 
@@ -17,26 +19,46 @@ aa bb cc dd aa is not valid - the word aa appears more than once.
 aa bb cc dd aaa is valid - aa and aaa count as different words.
 The system's full passphrase list is available as your puzzle input. How many passphrases are valid?
 
+Your puzzle answer was 466.
+
+--- Part Two ---
+
+For added security, yet another system policy has been put in place.
+Now, a valid passphrase must contain no two words that are anagrams of each other -
+that is, a passphrase is invalid if any word's letters can be rearranged to form any other word in the passphrase.
+
+For example:
+
+abcde fghij is a valid passphrase.
+abcde xyz ecdab is not valid - the letters from the third word can be rearranged to form the first word.
+a ab abc abd abf abj is a valid passphrase, because all letters need to be used when forming another word.
+iiii oiii ooii oooi oooo is valid.
+oiii ioii iioi iiio is not valid - any of these words can be rearranged to form any other word.
+
+Under this new system policy, how many passphrases are valid?
+
+Your puzzle answer was 251.
+
  */
 
 fun splitPassphrase(passphrase: String) =
                 if (passphrase.isBlank()) listOf()
                 else passphrase.split("""\s+""".toRegex())
 
-fun validate(passphrase: String): Boolean =
+fun validate(passphrase: String, normalizer: (String) -> String = { it }): Boolean =
         if (passphrase.isBlank()) false
         else
             with(mutableSetOf<String>()) {
                 for(word in splitPassphrase(passphrase)) {
-                    if (this.contains(word)) return false
-                    else this += word
+                    if (this.contains(normalizer(word))) return false
+                    else this += normalizer(word)
                 }
                 true
             }
 
-fun countValid(passphrases: List<String>) = passphrases.filter { validate(it) }.count()
+fun countValid(passphrases: List<String>, normalizer: (String) -> String = { it }) = passphrases.filter { validate(it, normalizer) }.count()
 
-fun countValid(passphrases: String) = countValid(passphrases.split("\n"))
+fun countValid(passphrases: String, normalizer: (String) -> String = { it }) = countValid(passphrases.split("\n"), normalizer = normalizer)
 
 class Day4Spec : Spek({
     describe("split passphrase") {
@@ -114,8 +136,53 @@ class Day4Spec : Spek({
             }
         }
     }
-    describe("valid passphrases") {
-        println(countValid("""
+    describe("valid unique passphrases") {
+        println("Unique passphrases: ${countValid(day4Input)}")
+    }
+
+    describe("sort letters") {
+        on("given a string baztv") {
+            val string = "baztv"
+            it("should be sorted") {
+                string.sortLetters() `should equal` "abtvz"
+            }
+        }
+    }
+    describe("validate passphrases non permutation") {
+        /*
+        abcde fghij is a valid passphrase.
+abcde xyz ecdab is not valid - the letters from the third word can be rearranged to form the first word.
+a ab abc abd abf abj is a valid passphrase, because all letters need to be used when forming another word.
+iiii oiii ooii oooi oooo is valid.
+oiii ioii iioi iiio is not valid - any of these words can be rearranged to form any other word.
+
+         */
+        it("abcde fghij is a valid passphrase") {
+            validate("abcde fghij",  { it.sortLetters() }) `should equal` true
+        }
+        it("abcde xyz ecdab is not valid") {
+            validate("abcde xyz ecdab",  { it.sortLetters() }) `should equal` false
+        }
+        it("a ab abc abd abf abj is valid") {
+            validate("a ab abc abd abf abj",  { it.sortLetters() }) `should equal` true
+        }
+        it("iiii oiii ooii oooi oooo is valid") {
+            validate("iiii oiii ooii oooi oooo",  { it.sortLetters() }) `should equal` true
+        }
+        it("oiii ioii iioi iiio is not valid") {
+            validate("oiii ioii iioi iiio",  { it.sortLetters() }) `should equal` false
+        }
+    }
+
+    describe("valid non permutation passphrases") {
+        println("Non-permutation passphrases: ${countValid(day4Input, { it.sortLetters() })}")
+    }
+
+})
+
+fun String.sortLetters() = this.toCharArray().toList().sorted().joinToString("")
+
+val day4Input = """
 pphsv ojtou brvhsj cer ntfhlra udeh ccgtyzc zoyzmh jum lugbnk
 vxjnf fzqitnj uyfck blnl impo kxoow nngd worcm bdesehw
 caibh nfuk kfnu llfdbz uxjty yxjut jcea
@@ -628,10 +695,7 @@ lfd eops govslp ultbye vrqai hcjkcf snpape
 cbok koumkad otpozb pqcs emilpe wpcyvxd bock
 spjb xkkak anuvk ejoklh nyerw bsjp zxuq vcwitnd xxtjmjg zfgq xkpf
 juo pmiyoh xxk myphio ogfyf dovlmwm moevao qqxidn
-            """))
-    }
-
-})
+"""
 
 
 
