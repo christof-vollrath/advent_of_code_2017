@@ -36,6 +36,22 @@ In what order are the programs standing after their dance?
 
 Your puzzle answer was ehdpincaogkblmfj.
 
+--- Part Two ---
+
+Now that you're starting to get a feel for the dance moves, you turn your attention to the dance as a whole.
+
+Keeping the positions they ended up in from their previous dance,
+the programs perform it again and again: including the first dance, a total of one billion (1000000000) times.
+
+In the example above, their second dance would begin with the order baedc, and use the same dance moves:
+
+s1, a spin of size 1: cbaed.
+x3/4, swapping the last two programs: cbade.
+pe/b, swapping programs e and b: ceadb.
+
+In what order are the programs standing after their billion dances?
+
+
 */
 
 class Day16Spec : Spek({
@@ -125,7 +141,36 @@ class Day16Spec : Spek({
     describe("exercise part 1") {
         on("exercise input") {
             val result = parseDanceMoves(day16Input).doTheDance(createStartPositions(16)).joinToString("")
-            println(result)
+            println("After one dance: $result")
+        }
+    }
+    describe("repeat dance") {
+        on("5 programs doing the example dance two times") {
+            val startPositions = createStartPositions(5)
+            val moves = parseDanceMoves("s1,x3/4,pe/b")
+            it("should have end positions") {
+                val afterDance1 =   moves.doTheDance(startPositions)
+                moves.doTheDance(afterDance1).joinToString("") `should equal` "ceadb"
+                moves.doTheDance(startPositions, 2).joinToString("") `should equal` "ceadb"
+            }
+        }
+
+    }
+    describe("exercise input") {
+        it("repeats after 48 dances") {
+            val moves = parseDanceMoves(day16Input)
+            val start = createStartPositions(16)
+            moves.findCycle(start) `should equal` 48
+        }
+    }
+    describe("exercise part 2") {
+        on("exercise input and dance repeated 1000_000_000 times") {
+            val moves = parseDanceMoves(day16Input)
+            val start = createStartPositions(16)
+            val cycles = moves.findCycle(start) // Executing the dance repeatedly leads to the start positions after some cycles
+            val shortened = 1000_000_000 % cycles // Executing one billion time would take to long
+            val result = moves.doTheDance(start, shortened ).joinToString("")
+            println("After $shortened dances: $result")
         }
     }
 })
@@ -159,7 +204,6 @@ data class Partner(val name1: Char, val name2: Char) : DanceMove() {
         }
 }
 
-
 abstract class DanceMove {
     abstract fun move(before: List<Char>): List<Char>
 }
@@ -168,6 +212,24 @@ fun createStartPositions(n: Int) = (0..(n-1)).map { (it + 'a'.toInt()).toChar() 
 
 fun List<DanceMove>.doTheDance(startPositions: List<Char>) =
         this.fold(startPositions) { position, move ->  move.move(position) }
+
+fun List<DanceMove>.doTheDance(startPositions: List<Char>, n: Int): List<Char> {
+    var result = startPositions
+    (1..n).forEach {
+        result = this.doTheDance(result)
+    }
+    return result
+}
+
+fun List<DanceMove>.findCycle(startPositions: List<Char>): Int {
+    var result = startPositions
+    var i = 0
+    do {
+        result = this.doTheDance(result)
+        i++
+    } while (result != startPositions)
+    return i
+}
 
 fun parseDanceMoves(input: String) =
         input.split(",")
