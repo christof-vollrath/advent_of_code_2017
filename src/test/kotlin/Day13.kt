@@ -4,7 +4,6 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.data_driven.data
-import kotlin.coroutines.experimental.buildSequence
 import org.jetbrains.spek.data_driven.on as onData
 
 /*
@@ -379,7 +378,7 @@ fun parseFirewallDefinition(input: String) =
                 }
                 .toMap()
 
-val exampleInput = """
+val day13ExampleInput = """
             0: 3
             1: 2
             4: 4
@@ -388,7 +387,7 @@ val exampleInput = """
 
 class Day13Spec : Spek({
     describe("layers and scanners") {
-        val layers = parseFirewallDefinition(exampleInput)
+        val layers = parseFirewallDefinition(day13ExampleInput)
         val firewall = Firewall(layers)
         val testData = arrayOf(
                 //     picosec         scanner positions
@@ -422,7 +421,7 @@ class Day13Spec : Spek({
             }
         }
         on("example severity") {
-            val firewall = Firewall(parseFirewallDefinition(exampleInput))
+            val firewall = Firewall(parseFirewallDefinition(day13ExampleInput))
             it("should be 24 for delay 0") {
                 firewall.severity(0) `should equal` 24
             }
@@ -434,7 +433,7 @@ class Day13Spec : Spek({
             }
         }
         on("example caught") {
-            val firewall = Firewall(parseFirewallDefinition(exampleInput))
+            val firewall = Firewall(parseFirewallDefinition(day13ExampleInput))
             it("should be true for delay 0") {
                 firewall.caught(0) `should equal` true
             }
@@ -448,7 +447,7 @@ class Day13Spec : Spek({
     }
     describe("find delay for severity 0 to get through the firewall") {
         on("example firewaoll") {
-            val firewall = Firewall(parseFirewallDefinition(exampleInput))
+            val firewall = Firewall(parseFirewallDefinition(day13ExampleInput))
             it("should be 10") {
                 val delay = firewall.optimalDelay()
                 firewall.severity(delay) `should equal` 0
