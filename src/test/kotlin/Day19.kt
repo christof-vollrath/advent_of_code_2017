@@ -45,6 +45,34 @@ What letters will it see (in the order it would see them) if it follows the path
 
 Your puzzle answer was PBAZYFMHT.
 
+--- Part Two ---
+
+The packet is curious how many steps it needs to go.
+
+For example, using the same routing diagram from the example above...
+
+     |
+     |  +--+
+     A  |  C
+ F---|--|-E---+
+     |  |  |  D
+     +B-+  +--+
+
+...the packet would go:
+
+6 steps down (including the first line at the top of the diagram).
+3 steps right.
+4 steps up.
+3 steps right.
+4 steps down.
+3 steps right.
+2 steps up.
+13 steps left (including the F it stops on).
+This would result in a total of 38 steps.
+
+How many steps does the packet need to go?
+
+Your puzzle answer was 16072.
 
  */
 
@@ -53,6 +81,7 @@ class Day19Spec : Spek({
         on("example") {
             it("should fallow the right path") {
                 fallowPath(day19ExampleInput).joinToString("") `should equal` "ABCDEF"
+                fallowPath(day19ExampleInput, fullPath = true).size `should equal` 38
             }
         }
         on("shortest path") {
@@ -95,14 +124,16 @@ class Day19Spec : Spek({
         on("find path") {
             val result = fallowPath(day19Input).joinToString("")
             println(result)
+            val steps = fallowPath(day19Input, fullPath = true).size
+            println(steps)
         }
 
     }
 })
 
-fun fallowPath(input: String) = fallowPath(parseTubes(input))
-fun fallowPath(tubes: Array<String>) = fallowPath(tubes, findStartPoint(tubes))
-fun fallowPath(tubes: Array<String>, startPoint: Pair<Int, Int>) = buildSequence {
+fun fallowPath(input: String, fullPath: Boolean = false) = fallowPath(parseTubes(input), fullPath)
+fun fallowPath(tubes: Array<String>, fullPath: Boolean = false) = fallowPath(tubes, findStartPoint(tubes), fullPath)
+fun fallowPath(tubes: Array<String>, startPoint: Pair<Int, Int>, fullPath: Boolean = false) = buildSequence {
     fun moveOneStep(pos: Pair<Int, Int>, dir: MoveDirection) =
             when(dir) {
                 MoveDirection.DOWN -> pos.copy(second = pos.second + 1)
@@ -116,7 +147,7 @@ fun fallowPath(tubes: Array<String>, startPoint: Pair<Int, Int>) = buildSequence
     var dir = MoveDirection.DOWN
     while(true) {
         val current = getLine(pos, tubes)
-        if (current.isLetter()) yield(current)
+        if (current.isLetter() || fullPath) yield(current)
         if (getLine(moveOneStep(pos, dir), tubes).isWhitespace())
             dir = findNewDirection(dir, pos, tubes) // change dir
         if (dir == MoveDirection.STOP) break
