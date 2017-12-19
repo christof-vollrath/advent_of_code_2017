@@ -60,6 +60,57 @@ At the time the recover operation is executed, the frequency of the last sound p
 What is the value of the recovered frequency (the value of the most recently played sound)
 the first time a rcv instruction is executed with a non-zero value?
 
+Your puzzle answer was 8600.
+
+--- Part Two ---
+
+As you congratulate yourself for a job well done,
+you notice that the documentation has been on the back of the tablet this entire time.
+While you actually got most of the instructions correct, there are a few key differences.
+This assembly code isn't about sound at all - it's meant to be run twice at the same time.
+
+Each running copy of the program has its own set of registers and follows the code independently
+- in fact, the programs don't even necessarily run at the same speed.
+To coordinate, they use the send (snd) and receive (rcv) instructions:
+
+snd X sends the value of X to the other program.
+These values wait in a queue until that program is ready to receive them.
+Each program has its own message queue, so a program can never receive a message it sent.
+rcv X receives the next value and stores it in register X.
+If no values are in the queue, the program waits for a value to be sent to it.
+Programs do not continue to the next instruction until they have received a value.
+Values are received in the order they are sent.
+Each program also has its own program ID (one 0 and the other 1);
+the register p should begin with this value.
+
+For example:
+
+snd 1
+snd 2
+snd p
+rcv a
+rcv b
+rcv c
+rcv d
+
+Both programs begin by sending three values to the other.
+Program 0 sends 1, 2, 0; program 1 sends 1, 2, 1.
+Then, each program receives a value (both 1) and stores it in a,
+receives another value (both 2) and stores it in b, and then each receives the program ID of the other program
+(program 0 receives 1; program 1 receives 0) and stores it in c.
+Each program now sees a different value in its own copy of register c.
+
+Finally, both programs try to rcv a fourth time, but no data is waiting for either of them,
+and they reach a deadlock.
+When this happens, both programs terminate.
+
+It should be noted that it would be equally valid for the programs to run at different speeds;
+for example, program 0 might have sent all three values
+and then stopped at the first rcv before program 1 executed even its first instruction.
+
+Once both of your programs have terminated (regardless of what caused them to do so),
+how many times did program 1 send a value?
+
  */
 
 class Day18Spec : Spek({
@@ -140,19 +191,19 @@ class Day18Spec : Spek({
             val duet = Duet()
             val duetWithA = DuetSet('a', DuetConst(5)).execute(duet)
             it("should sound frequency") {
-                DuetSnd(DuetConst(4)).execute(duet).sound `should equal` 4L
+                DuetSoundPart1(DuetConst(4)).execute(duet).sound `should equal` 4L
             }
             it("should sound frequenc from register") {
-                DuetSnd(DuetRegister('a')).execute(duetWithA).sound `should equal` 5L
+                DuetSoundPart1(DuetRegister('a')).execute(duetWithA).sound `should equal` 5L
             }
         }
         on("rcv") {
             val duet = Duet()
             it("should stop when non zero value") {
-                DuetRcv(DuetConst(1)).execute(duet).stop `should equal` true
+                DuetRcvSoundPart1(DuetConst(1)).execute(duet).stop `should equal` true
             }
             it("should not stop when zero value") {
-                DuetRcv(DuetConst(0)).execute(duet).stop `should equal` false
+                DuetRcvSoundPart1(DuetConst(0)).execute(duet).stop `should equal` false
             }
         }
         on("jgz") {
@@ -174,9 +225,9 @@ class Day18Spec : Spek({
                         DuetAdd('a', DuetConst(2)),
                         DuetMul('a', DuetRegister('a')),
                         DuetMod('a', DuetConst(5)),
-                        DuetSnd(DuetRegister('a')),
+                        DuetSoundPart1(DuetRegister('a')),
                         DuetSet('a', DuetConst(0)),
-                        DuetRcv(DuetRegister('a')),
+                        DuetRcvSoundPart1(DuetRegister('a')),
                         DuetJgz(DuetRegister('a'), DuetConst(-1)),
                         DuetSet('a', DuetConst(1)),
                         DuetJgz(DuetRegister('a'), DuetConst(-2))
@@ -195,6 +246,7 @@ class Day18Spec : Spek({
 })
 
 data class Duet(val instructions: List<DuetInstr> = listOf(),
+                val id: Int = 0,
                 val registers: Map<Char, Long> = mapOf(),
                 val sound: Long = 0,
                 val pc: Int = 0,
@@ -242,10 +294,10 @@ data class DuetMod(val r: Char, val i: DuetParam) : DuetInstr() {
         return duet.copy(registers = changedRegisters, pc = duet.pc + 1)
     }
 }
-data class DuetSnd(val i: DuetParam) : DuetInstr() {
+data class DuetSoundPart1(val i: DuetParam) : DuetInstr() {
     override fun execute(duet: Duet) = duet.copy(sound = i.value(duet), pc = duet.pc + 1)
 }
-data class DuetRcv(val i: DuetParam) : DuetInstr() {
+data class DuetRcvSoundPart1(val i: DuetParam) : DuetInstr() {
     override fun execute(duet: Duet) = with (i.value(duet)) {
         if (this == 0L) duet.copy(pc = duet.pc + 1)
         else duet.copy(stop = true)
@@ -282,8 +334,8 @@ fun parseDuetInstructions(input: String) =
                         "add" -> DuetAdd(parseRegister(par1), parseParamenter(par2!!))
                         "mul" -> DuetMul(parseRegister(par1), parseParamenter(par2!!))
                         "mod" -> DuetMod(parseRegister(par1), parseParamenter(par2!!))
-                        "snd" -> DuetSnd(parseParamenter(par1))
-                        "rcv" -> DuetRcv(parseParamenter(par1))
+                        "snd" -> DuetSoundPart1(parseParamenter(par1))
+                        "rcv" -> DuetRcvSoundPart1(parseParamenter(par1))
                         "jgz" -> DuetJgz(parseParamenter(par1), parseParamenter(par2!!))
                         else -> throw IllegalArgumentException("Cmd: $cmd illegal, line ${it.first}")
                     }
