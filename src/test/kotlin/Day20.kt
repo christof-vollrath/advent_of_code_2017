@@ -3,7 +3,7 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import javax.swing.text.html.HTML.Tag.P
+import kotlin.coroutines.experimental.buildSequence
 
 /*
 --- Day 20: Particle Swarm ---
@@ -57,13 +57,49 @@ Which particle will stay closest to position <0,0,0> in the long term?
 
 Your puzzle answer was 144.
 
+--- Part Two ---
+
+To simplify the problem further,
+the GPU would like to remove any particles that collide.
+Particles collide if their positions ever exactly match.
+Because particles are updated simultaneously, more than two particles can collide at the same time and place.
+Once particles collide, they are removed and cannot collide with anything else after that tick.
+
+For example:
+
+p=<-6,0,0>, v=< 3,0,0>, a=< 0,0,0>
+p=<-4,0,0>, v=< 2,0,0>, a=< 0,0,0>    -6 -5 -4 -3 -2 -1  0  1  2  3
+p=<-2,0,0>, v=< 1,0,0>, a=< 0,0,0>    (0)   (1)   (2)            (3)
+p=< 3,0,0>, v=<-1,0,0>, a=< 0,0,0>
+
+p=<-3,0,0>, v=< 3,0,0>, a=< 0,0,0>
+p=<-2,0,0>, v=< 2,0,0>, a=< 0,0,0>    -6 -5 -4 -3 -2 -1  0  1  2  3
+p=<-1,0,0>, v=< 1,0,0>, a=< 0,0,0>             (0)(1)(2)      (3)
+p=< 2,0,0>, v=<-1,0,0>, a=< 0,0,0>
+
+p=< 0,0,0>, v=< 3,0,0>, a=< 0,0,0>
+p=< 0,0,0>, v=< 2,0,0>, a=< 0,0,0>    -6 -5 -4 -3 -2 -1  0  1  2  3
+p=< 0,0,0>, v=< 1,0,0>, a=< 0,0,0>                       X (3)
+p=< 1,0,0>, v=<-1,0,0>, a=< 0,0,0>
+
+------destroyed by collision------
+------destroyed by collision------    -6 -5 -4 -3 -2 -1  0  1  2  3
+------destroyed by collision------                      (3)
+p=< 0,0,0>, v=<-1,0,0>, a=< 0,0,0>
+
+In this example, particles 0, 1, and 2 are simultaneously destroyed at the time and place marked X.
+On the next tick, particle 3 passes through unharmed.
+
+How many particles are left after all collisions are resolved?
+
+Your puzzle answer was 477.
 
  */
 
 class Day20Spec : Spek({
     describe("particles") {
         on("example") {
-            val input = day20ExamleInput
+            val input = day20Part1ExamleInput
             it("should be parsed correctly") {
                 parseParticles(input) `should equal` listOf(
                         P(Triple(3,0,0), Triple(2,0,0), Triple(-1,0,0)),
@@ -72,12 +108,18 @@ class Day20Spec : Spek({
             }
             it("should print the partice closest to <0,0,0>") {
                 val particles = parseParticles(input)
-                moveParticles(particles, 4)
+                moveParticles(particles, 4) {
+                    it.forEach { println(it) };  println("closest to <0,0,0>; ${closestTo0(it)}"); println()
+                    it
+                }
             }
         }
         on("exercixe part1") {
             val particles = parseParticles(day20Input)
-            moveParticles(particles, 1000)
+            moveParticles(particles, 500) {
+                println("closest to <0,0,0>; ${closestTo0(it)}"); println()
+                it
+            }
         }
     }
     describe("particles helper") {
@@ -88,14 +130,42 @@ class Day20Spec : Spek({
             parseParticle("p=< 3,0,0>, v=< 2,0,0>, a=<-1,0,0>") `should equal`
                     P(Triple(3L,0L,0L), Triple(2L,0L,0L), Triple(-1L,0L,0L))
         }
+        it("should remove collisions") {
+            val input = parseParticles("""
+    p=<0,0,0>, v=< 3,0,0>, a=< 0,0,0>
+    p=<0,0,0>, v=< 2,0,0>, a=< 0,0,0>
+    p=<0,0,0>, v=< 1,0,0>, a=< 0,0,0>
+    p=<3,0,0>, v=<-1,0,0>, a=< 0,0,0>
+""")
+            removeCollisions(input) `should equal` listOf(
+                    P(Triple(3L,0L,0L), Triple(-1L,0L,0L), Triple(0L,0L,0L))
+            )
+        }
+        on("exercixe part2") {
+            val particles = parseParticles(day20Input)
+            moveParticles(particles, 100) {
+                val result = removeCollisions(it)
+                println(it.size)
+                result
+            }
+        }
     }
 
 })
 
-fun moveParticles(start: List<P>, n: Int) {
+fun removeCollisions(input: List<P>): List<P> {
+    val countPositions = mutableMapOf<Triple<Long, Long, Long>, Int>()
+    input.forEach {
+        val count = countPositions[it.p]?:0
+        countPositions[it.p] = count + 1
+    }
+    return input.filter { (countPositions[it.p]?:0) <= 1}
+}
+
+fun moveParticles(start: List<P>, n: Int, action: (List<P>) -> List<P>) {
     var particles = start
     for(i in 1..n) {
-        /*particles.forEach { println(it) };*/ println("closest to <0,0,0>; ${closestTo0(particles)}"); println()
+        particles = action(particles)
         particles = particles.map { moveParticle(it)}
     }
 }
@@ -144,10 +214,18 @@ fun parseTriple(string: String): Triple<Long, Long, Long> {
         return Triple(list[0], list[1], list[2])
 }
 
-val day20ExamleInput = """
+val day20Part1ExamleInput = """
     p=< 3,0,0>, v=< 2,0,0>, a=<-1,0,0>
     p=< 4,0,0>, v=< 0,0,0>, a=<-2,0,0>
 """
+
+val day20Part2ExampleInput = """
+    p=<-6,0,0>, v=< 3,0,0>, a=< 0,0,0>
+    p=<-4,0,0>, v=< 2,0,0>, a=< 0,0,0>
+    p=<-2,0,0>, v=< 1,0,0>, a=< 0,0,0>
+    p=< 3,0,0>, v=<-1,0,0>, a=< 0,0,0>
+"""
+
 
 val day20Input = """
 p=<-1021,-2406,1428>, v=<11,24,-73>, a=<4,9,0>
