@@ -2,7 +2,7 @@ group 'net.taobits'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.1.60'
+    ext.kotlin_version = '1.2.10'
 
     repositories {
         jcenter()
@@ -31,6 +31,7 @@ dependencies {
     testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: '1.0.0'
     testCompile 'org.amshove.kluent:kluent:1.30'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+//    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '0.20'
 }
 
 kotlin {
