@@ -293,12 +293,32 @@ class Day21Spec : Spek({
                                 listOf('.', '.')
                         ),
                         listOf(
+                                listOf('#', '#'),
+                                listOf('.', '.')
+                        ),
+                        listOf(
                                 listOf('.', '#'),
                                 listOf('.', '.')
                         ),
                         listOf(
+                                listOf('#', '.'),
+                                listOf('#', '.')
+                        ),
+                        listOf(
+                                listOf('#', '#'),
+                                listOf('#', '#')
+                        ),
+                        listOf(
+                                listOf('.', '#'),
+                                listOf('.', '#')
+                        ),
+                        listOf(
                                 listOf('.', '.'),
                                 listOf('#', '.')
+                        ),
+                        listOf(
+                                listOf('.', '.'),
+                                listOf('#', '#')
                         ),
                         listOf(
                                 listOf('.', '.'),
@@ -309,18 +329,31 @@ class Day21Spec : Spek({
         }
     }
 
-
+    describe("split list") {
+        on("split list in two parts") {
+            val input = listOf('a', 'b', 'c', 'd')
+            it("should return list of two lists") {
+                input.split(2) `should equal` listOf(listOf('a', 'b'), listOf('c', 'd'))
+            }
+        }
+        on("split list in three parts with a more compex logic") {
+            val input = listOf('a', 'b', 'c', 'd', 'e', 'f')
+            it("should return list of three lists") {
+                input.split { it % 3 } `should equal` listOf(listOf('a', 'd'), listOf('b', 'e'), listOf('c', 'f'))
+            }
+        }
+    }
 })
 
-fun splitPattern(n: Int, input: List<List<Char>>) =
-    input.flatten()
-            .withIndex()
-            .groupBy { it.index / (input.size / n) }
-            .map { it.value.map { it.value }}
-            .withIndex()
-            .groupBy { it.index % (n*n) }
-            .map { it.value.map { it.value }}
+fun <E> List<E>.split(n: Int) = this.split { it / (this.size / n) }
+fun <E> List<E>.split(splitter: (Int) -> Int) =
+        this.withIndex()
+                .groupBy { splitter(it.index) }
+                .map { it.value.map { it.value }}
 
+fun splitPattern(n: Int, input: List<List<Char>>) =
+    input.flatMap { it.split(n) } // rows
+        .split { it %n + (it / input.size) * n } // rearranged
 
 fun parseRules(input: String) =
         input.split("\n")
