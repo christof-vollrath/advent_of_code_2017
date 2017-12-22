@@ -244,7 +244,7 @@ class Day21Spec : Spek({
                             listOf('.', '#')
                         )
             it("should be original") {
-                splitPattern(1, input) `should equal` input
+                splitPattern(1, input) `should equal` listOf(input)
             }
         }
         on("split by 2") {
@@ -276,16 +276,51 @@ class Day21Spec : Spek({
                 )
             }
         }
+        on("split by 3") {
+            val input = listOf(
+                    listOf('#', '.', '#', '#',  '.', '#'),
+                    listOf('.', '.', '.', '.', '.', '.'),
+                    listOf('#', '.', '#', '#',  '.', '#'),
+                    listOf('#', '.', '#', '#',  '.', '#'),
+                    listOf('.', '.', '.', '.', '.', '.'),
+                    listOf('#', '.', '#', '#',  '.', '#')
+            )
+
+            it("should 9 patterns") {
+                splitPattern(3, input) `should equal` listOf(
+                        listOf(
+                                listOf('#', '.'),
+                                listOf('.', '.')
+                        ),
+                        listOf(
+                                listOf('.', '#'),
+                                listOf('.', '.')
+                        ),
+                        listOf(
+                                listOf('.', '.'),
+                                listOf('#', '.')
+                        ),
+                        listOf(
+                                listOf('.', '.'),
+                                listOf('.', '#')
+                        )
+                )
+            }
+        }
     }
 
 
 })
 
 fun splitPattern(n: Int, input: List<List<Char>>) =
-        input.flatten()
-                .withIndex()
-                .groupBy { it.index / (input.size / n) }
-                .map { it.value.map { it.value }}
+    input.flatten()
+            .withIndex()
+            .groupBy { it.index / (input.size / n) }
+            .map { it.value.map { it.value }}
+            .withIndex()
+            .groupBy { it.index % (n*n) }
+            .map { it.value.map { it.value }}
+
 
 fun parseRules(input: String) =
         input.split("\n")
