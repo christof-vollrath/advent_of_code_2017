@@ -1,8 +1,13 @@
+import org.amshove.kluent.`should contain`
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.xdescribe
+import java.lang.Math.sqrt
+import kotlin.coroutines.experimental.buildSequence
+import kotlin.math.roundToInt
 
 /*
 --- Day 21: Fractal Art ---
@@ -95,10 +100,174 @@ Thus, after 2 iterations, the grid contains 12 pixels that are on.
 
 How many pixels stay on after 5 iterations?
 
+Your puzzle answer was 158.
+
+
+--- Part Two ---
+
+How many pixels stay on after 18 iterations?
+
+Your puzzle answer was 2301762.
+
 
  */
 
 class Day21Spec : Spek({
+    describe("part 1") {
+        it("day21 input") {
+            val result = iterations(5, day21Input, day21Rules)
+            println(result)
+            println("Number of pixels after 5 iterations: ${countPixels(result)}")
+        }
+    }
+    describe("part 2") {
+        it("day21 input") {
+            val result = iterations(18, day21Input, day21Rules)
+            println("Number of pixels after 18 iterations: ${countPixels(result)}")
+        }
+    }
+    describe("find start pattern in example rules") {
+        on("example rules") {
+            val rules = parseRules(day21ExampleRulesString)
+            it("should be found") {
+                rules.flatMap { createVariants(it.first) } `should contain` day21Input
+            }
+        }
+        on("exercise rules") {
+            val rules = parseRules(day21RulesString)
+            it("should be found") {
+                rules.flatMap { createVariants(it.first) } `should contain` day21Input
+            }
+        }
+
+    }
+    describe("multiple iterations") {
+        on("two iteration") {
+            val result = iterations(2, day21Input, day21ExampleRules)
+            it("should have the correct result") {
+                result `should equal` parsePattern("##.##./#..#../....../##.##./#..#../......")
+                countPixels(result) `should equal` 12
+            }
+        }
+    }
+    describe("single iterations") {
+        lateinit var afterIteration1: List<List<Char>>
+        on("first iteration") {
+            afterIteration1 = iterate(day21Input, day21ExampleRules)
+            it("should have the values of the first iteration") {
+                afterIteration1 `should equal` parsePattern("#..#/..../..../#..#")
+            }
+        }
+        on("second iteration") {
+            val afterIteration2 = iterate(afterIteration1, day21ExampleRules)
+            it("should have the values of the second iteration") {
+                afterIteration2 `should equal` parsePattern("##.##./#..#../....../##.##./#..#../......")
+                countPixels(afterIteration2) `should equal` 12
+            }
+        }
+    }
+    describe("join parts") {
+        on("only one part") {
+            val input = listOf(
+                    listOf(listOf('#'))
+            )
+            it("should return the part") {
+                joinParts(input) `should equal`listOf(listOf('#'))
+            }
+        }
+        on("four parts") {
+            val input = listOf(
+                    listOf(listOf('#')), listOf(listOf('.')),
+                    listOf(listOf('.')), listOf(listOf('#'))
+            )
+            it("should return the part") {
+                joinParts(input) `should equal`listOf(listOf('#', '.'), listOf('.', '#'))
+            }
+        }
+        on("more parts") {
+            val input = listOf(
+                    listOf(listOf('#', '.'), listOf('.', '.')),
+                    listOf(listOf('.', '#'), listOf('.', '.')),
+                    listOf(listOf('.', '.'), listOf('#', '.')),
+                    listOf(listOf('.', '.'), listOf('.', '#'))
+            )
+            it("should return the part") {
+                joinParts(input) `should equal`listOf(
+                        listOf('#', '.', '.', '#'),
+                        listOf('.', '.', '.', '.'),
+                        listOf('.', '.', '.', '.'),
+                        listOf('#', '.', '.', '#')
+                )
+            }
+        }
+    }
+    describe("zip lists") {
+        on("list of noting") {
+            val lists = listOf<List<Char>>()
+            it("should be this list") {
+                zipLists(lists) `should equal` lists
+            }
+        }
+        on("list of some lists") {
+            val lists = listOf(listOf('a', 'b', 'c'), listOf('d', 'e', 'f'), listOf('g', 'h', 'i'))
+            it("should zip alls lists") {
+                zipLists(lists) `should equal` listOf(listOf('a', 'd', 'g'), listOf('b', 'e', 'h'), listOf('c', 'f', 'i'))
+            }
+        }
+    }
+    describe("create rules map") {
+        on("some rules") {
+            val rules = createRulesMap(parseRules("""
+            .../.../.## => ##./#../...
+            .#./..#/### => #..#/..../..../#..#
+            """))
+            it("should contain the correct mappings") {
+                rules[parsePattern(".../.../.##")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern(".../.../##.")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern(".##/.../...")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern(".../#../#..")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern("##./.../...")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern("..#/..#/...")] `should equal` parsePattern("##./#../...")
+                rules[parsePattern(".../..#/..#")] `should equal` parsePattern("##./#../...")
+            }
+        }
+    }
+    describe("pattern variants") {
+        on("start pattern") {
+            val variants = createVariants(day21Input)
+            it("should contain all variants of the start pattern") {
+                /*
+                    .#.   .#.   #..   ###
+                    ..#   #..   #.#   ..#
+                    ###   ###   ##.   .#.
+                 */
+                variants `should contain` parsePattern(".#./..#/###")
+                variants `should contain` parsePattern(".#./#../###")
+                variants `should contain` parsePattern("#../#.#/##.")
+                variants `should contain` parsePattern("###/..#/.#.")
+                variants.size `should equal` 12
+            }
+        }
+    }
+    describe("split grid") {
+        on("3x3 grid") {
+            val input = parsePattern(".#./..#/###")
+            it("should return the same grid") {
+                splitPattern(input) `should equal` listOf(parsePattern(".#./..#/###"))
+            }
+        }
+        on("4x4 grid") {
+            val input = parsePattern("#..#/..../..../#..#")
+            it("should return the same grid") {
+                splitPattern(input) `should equal` listOf(
+                        parsePattern("#./.."),
+                        parsePattern(".#/.."),
+                        parsePattern("../#."),
+                        parsePattern("../.#")
+                )
+            }
+        }
+    }
     describe("rotate and flip") {
         on("example 3x3") {
             val input = listOf(
@@ -345,7 +514,44 @@ class Day21Spec : Spek({
     }
 })
 
-fun <E> List<E>.split(n: Int) = this.split { it / (this.size / n) }
+fun iterations(nr: Int, pattern: List<List<Char>>, rules: Map<List<List<Char>>, List<List<Char>>>) =
+        (1..nr).fold(pattern) { r, _ ->
+            val result = iterate(r, rules)
+            result
+        }
+
+fun countPixels(pattern: List<List<Char>>) = pattern.flatten().filter { it == '#'}.count()
+
+fun <T> zipLists(lists: List<List<T>>): List<List<T>> {
+    val iterators = lists.map { it.iterator() }
+    val result = ArrayList<List<T>>(lists.size)
+    while(!iterators.isEmpty() && iterators.all { it.hasNext() } ) {
+        val zippedElement = iterators.map { it.next() }
+        result.add(zippedElement)
+    }
+    return result
+}
+
+fun iterate(input: List<List<Char>>, rules: Map<List<List<Char>>, List<List<Char>>>) =
+        joinParts(splitPattern(input).map { applyRules(it, rules)})
+
+fun joinParts(parts: List<List<List<Char>>>): List<List<Char>> { //= parts.first()
+    val nrInGroup = sqrt(parts.size.toDouble()).roundToInt()
+    val nrParts = parts.size / nrInGroup
+    val splitted = parts.split(nrParts) // rows
+    return splitted.flatMap { zipLists(it).map { it.flatten()} }
+}
+
+fun applyRules(pattern: List<List<Char>>, rules: Map<List<List<Char>>, List<List<Char>>>) = rules[pattern] ?: pattern
+
+fun splitPattern(input: List<List<Char>>) =
+        when {
+            input.size % 2 == 0 -> splitPattern(input.size / 2, input)
+            input.size % 3 == 0 -> splitPattern(input.size / 3, input)
+            else -> listOf(input)
+        }
+
+fun <E> List<E>.split(nrParts: Int) = this.split { it / (this.size / nrParts) }
 fun <E> List<E>.split(splitter: (Int) -> Int) =
         this.withIndex()
                 .groupBy { splitter(it.index) }
@@ -354,6 +560,21 @@ fun <E> List<E>.split(splitter: (Int) -> Int) =
 fun splitPattern(n: Int, input: List<List<Char>>) =
     input.flatMap { it.split(n) } // rows
         .split { it %n + (it / input.size) * n } // rearranged
+
+fun createRulesMap(rules: List<Pair<List<List<Char>>, List<List<Char>>>>) = buildSequence {
+    rules.forEach { rule ->
+        createVariants(rule.first).forEach { variant ->
+            yield(Pair(variant, rule.second))
+        }
+    }
+}.toMap()
+
+fun createVariants(pattern: List<List<Char>>): List<List<List<Char>>> =
+        listOf(pattern, flipV(pattern), flipH(pattern)).flatMap { createRotateVariants(it) }
+
+fun createRotateVariants(pattern: List<List<Char>>): List<List<List<Char>>> = listOf(
+        pattern, rotate90(pattern), rotate90(rotate90(pattern)), rotate90(rotate90(rotate90(pattern)))
+)
 
 fun parseRules(input: String) =
         input.split("\n")
@@ -376,3 +597,123 @@ fun rotate90(input: List<List<Char>>) = with(input.size-1) {
 
 fun flipH(input: List<List<Char>>) = input.reversed()
 fun flipV(input: List<List<Char>>) = input.map { it.reversed() }
+
+val day21Input = parsePattern(".#./..#/###")
+val day21ExampleRulesString ="""
+        ../.# => ##./#../...
+        .#./..#/### => #..#/..../..../#..#
+        """
+val day21ExampleRules = createRulesMap(parseRules(day21ExampleRulesString))
+
+val day21RulesString = """
+../.. => .../.##/##.
+#./.. => .##/.##/#..
+##/.. => ..#/.../###
+.#/#. => #.#/..#/##.
+##/#. => .#./.#./..#
+##/## => #.#/#../###
+.../.../... => ..../#.../.##./..#.
+#../.../... => ####/#.##/##.#/..#.
+.#./.../... => ..##/..##/..##/..##
+##./.../... => ..../..#./##../##.#
+#.#/.../... => ##.#/..../####/...#
+###/.../... => .#.#/.###/.#../.#.#
+.#./#../... => .###/#.#./...#/##..
+##./#../... => #.##/#.../####/###.
+..#/#../... => ####/...#/...#/#.##
+#.#/#../... => .#../##../..##/..#.
+.##/#../... => .#../..##/..../.##.
+###/#../... => #.../..#./.#.#/#..#
+.../.#./... => #.#./.#.#/.###/...#
+#../.#./... => ###./.#../...#/.#..
+.#./.#./... => ##.#/.#../#..#/##..
+##./.#./... => #..#/...#/.#.#/###.
+#.#/.#./... => .##./#.../#..#/.###
+###/.#./... => .#.#/##.#/..../##.#
+.#./##./... => ##.#/#.##/.#.#/#.##
+##./##./... => #.##/..#./..#./.##.
+..#/##./... => ..../#.../..#./..##
+#.#/##./... => .##./####/####/####
+.##/##./... => #.##/####/#.##/#..#
+###/##./... => .#../.###/##../...#
+.../#.#/... => ...#/...#/#.##/####
+#../#.#/... => ..#./..#./###./.##.
+.#./#.#/... => .##./##../.###/.#.#
+##./#.#/... => #.#./.#../.##./...#
+#.#/#.#/... => ##.#/..##/#.../##.#
+###/#.#/... => ..##/##../.#.#/..##
+.../###/... => .#../#.../.##./....
+#../###/... => ..##/..##/...#/.##.
+.#./###/... => #..#/..#./#.#./..##
+##./###/... => #.##/.#../##.#/##.#
+#.#/###/... => ####/###./.##./...#
+###/###/... => #..#/#.##/..../.##.
+..#/.../#.. => #.#./.#../##../..#.
+#.#/.../#.. => ##.#/####/##../.#.#
+.##/.../#.. => ####/##../#..#/..#.
+###/.../#.. => ##../..#./####/##.#
+.##/#../#.. => ##../#.#./###./..##
+###/#../#.. => ..../.#../#..#/...#
+..#/.#./#.. => ..#./...#/.###/.#.#
+#.#/.#./#.. => ###./..../#.#./###.
+.##/.#./#.. => ####/#.##/.#.#/.#..
+###/.#./#.. => ###./#.##/##../####
+.##/##./#.. => ##.#/..##/..#./.#..
+###/##./#.. => ##.#/.##./.###/.##.
+#../..#/#.. => #.../###./##.#/#..#
+.#./..#/#.. => ..##/.###/...#/..#.
+##./..#/#.. => ##../#.#./...#/.#..
+#.#/..#/#.. => ..#./###./##../.###
+.##/..#/#.. => #.../.##./..../#.#.
+###/..#/#.. => .#.#/#.##/#.##/..#.
+#../#.#/#.. => ..##/..##/#.../####
+.#./#.#/#.. => #.../...#/..../..##
+##./#.#/#.. => ###./..##/.#../.##.
+..#/#.#/#.. => ...#/..##/..#./.#..
+#.#/#.#/#.. => #.#./.#../..../##..
+.##/#.#/#.. => ..#./.###/##.#/....
+###/#.#/#.. => #.##/..##/...#/##..
+#../.##/#.. => #.#./##../###./.#.#
+.#./.##/#.. => .###/#..#/.##./....
+##./.##/#.. => .#.#/.#../.###/.##.
+#.#/.##/#.. => .#../..##/###./#.##
+.##/.##/#.. => ##../.##./..#./.#..
+###/.##/#.. => .#.#/..#./#..#/.###
+#../###/#.. => #.##/#..#/.#.#/#.#.
+.#./###/#.. => #.../#..#/#.../.#.#
+##./###/#.. => ##../####/##../.###
+..#/###/#.. => #.../..../####/##.#
+#.#/###/#.. => ...#/..../...#/..##
+.##/###/#.. => .#../####/#.##/.#..
+###/###/#.. => ###./.#.#/#.../##..
+.#./#.#/.#. => ...#/##../####/...#
+##./#.#/.#. => ####/#..#/###./#.##
+#.#/#.#/.#. => .###/#..#/..#./...#
+###/#.#/.#. => ###./.###/##.#/###.
+.#./###/.#. => #..#/#.../..#./####
+##./###/.#. => #.../..../#..#/..##
+#.#/###/.#. => #..#/.#.#/#.../##..
+###/###/.#. => .#.#/..../.#.#/#.##
+#.#/..#/##. => .#../..##/...#/###.
+###/..#/##. => .###/..#./##.#/##.#
+.##/#.#/##. => ####/#.##/.##./##..
+###/#.#/##. => #..#/#..#/####/#.##
+#.#/.##/##. => .###/#.#./#..#/.#.#
+###/.##/##. => #.#./#.#./#.##/..##
+.##/###/##. => ####/###./##.#/##.#
+###/###/##. => ##../..##/#.#./#...
+#.#/.../#.# => .#../###./.###/##.#
+###/.../#.# => ..../.#.#/#..#/##..
+###/#../#.# => ..#./#.../.##./...#
+#.#/.#./#.# => ...#/#.../##.#/.##.
+###/.#./#.# => ..../..../#.#./##.#
+###/##./#.# => .#../...#/...#/###.
+#.#/#.#/#.# => ...#/#.../##../.###
+###/#.#/#.# => #.../...#/.#../#.##
+#.#/###/#.# => ..../.##./..../##..
+###/###/#.# => .##./.#.#/#.##/.##.
+###/#.#/### => #.#./####/.##./.##.
+###/###/### => .#.#/..##/#.##/.##.
+"""
+val day21Rules = createRulesMap(parseRules(day21RulesString))
+
