@@ -123,6 +123,108 @@ Given your actual map, after 10000 bursts of activity, how many bursts cause a n
 
 Your puzzle answer was 5266.
 
+--- Part Two ---
+
+As you go to remove the virus from the infected nodes, it evolves to resist your attempt.
+
+Now, before it infects a clean node, it will weaken it to disable your defenses.
+If it encounters an infected node, it will instead flag the node to be cleaned in the future. So:
+
+Clean nodes become weakened.
+Weakened nodes become infected.
+Infected nodes become flagged.
+Flagged nodes become clean.
+Every node is always in exactly one of the above states.
+
+The virus carrier still functions in a similar way, but now uses the following logic during its bursts of action:
+
+Decide which way to turn based on the current node:
+If it is clean, it turns left.
+If it is weakened, it does not turn, and will continue moving in the same direction.
+If it is infected, it turns right.
+If it is flagged, it reverses direction, and will go back the way it came.
+Modify the state of the current node, as described above.
+The virus carrier moves forward one node in the direction it is facing.
+Start with the same map (still using . for clean and # for infected)
+and still with the virus carrier starting in the middle and facing up.
+
+Using the same initial state as the previous example, and drawing weakened as W and flagged as F,
+the middle of the infinite grid looks like this, with the virus carrier's position again marked with [ ]:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . # . . .
+. . . #[.]. . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+This is the same as before, since no initial nodes are weakened or flagged.
+The virus carrier is on a clean node, so it still turns left, instead weakens the node, and moves left:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . # . . .
+. . .[#]W . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+The virus carrier is on an infected node, so it still turns right,
+instead flags the node, and moves up:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . .[.]. # . . .
+. . . F W . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+This process repeats three more times,
+ending on the previously-flagged node and facing right:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . W W . # . . .
+. . W[F]W . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+Finding a flagged node, it reverses direction and cleans the node:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . W W . # . . .
+. .[W]. W . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+The weakened node becomes infected, and it continues in the same direction:
+
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . W W . # . . .
+.[.]# . W . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+
+Of the first 100 bursts, 26 will result in infection.
+Unfortunately, another feature of this evolved virus is speed;
+of the first 10000000 bursts, 2511944 will result in infection.
+
+Given your actual map, after 10000000 bursts of activity,
+how many bursts cause a node to become infected? (Do not count nodes that begin infected.)
+
 
  */
 
@@ -140,7 +242,7 @@ class Day22Spec : Spek({
         on("parse example input") {
             val grid = parseGrid(day22ExampleInput)
             it("should contain two infected nodes at the correct positions") {
-                grid.infected `should equal` setOf(Pair(1, 1), Pair(-1, 0))
+                grid.infected `should equal` mapOf(Pair(1, 1) to '#', Pair(-1, 0) to '#')
                 grid.infected.size `should equal` 2
             }
             it("should be converted to the input string") {
@@ -265,15 +367,15 @@ class Day22Spec : Spek({
     }
 })
 
-data class Grid(val infected: MutableSet<Pair<Int, Int>>, var pos: Pair<Int, Int>, var dir: Pair<Int, Int> = Pair(0, 1), var bursts: Int) {
+data class Grid(val infected: MutableMap<Pair<Int, Int>,Char>, var pos: Pair<Int, Int>, var dir: Pair<Int, Int> = Pair(0, 1), var bursts: Int) {
     fun moveOneStep() {
-        if (infected.contains(pos)) {
+        if (infected[pos] == '#') {
             dir = rotate(dir, right)
             infected.remove(pos)
             pos = movePos(pos, dir)
         } else {
             dir = rotate(dir, left)
-            infected.add(pos)
+            infected[pos] = '#'
             pos = movePos(pos, dir)
             bursts++
         }
@@ -293,15 +395,15 @@ fun movePos(pos: Pair<Int, Int>, dir: Pair<Int, Int>) = Pair(pos.first + dir.fir
 val left  = arrayOf(intArrayOf(0,-1), intArrayOf( 1, 0))
 val right = arrayOf(intArrayOf(0, 1), intArrayOf(-1, 0))
 
-fun gridToString(infected: Set<Pair<Int, Int>>): String {
-    val maxX = max(infected.map { it.first }.max()?:0, infected.map { -it.first }.max()?:0)
-    val maxY = max(infected.map { it.second }.max()?:0, infected.map { -it.second }.max()?:0)
+fun gridToString(infected: MutableMap<Pair<Int, Int>, Char>): String {
+    val maxX = max(infected.keys.map { it.first }.max()?:0, infected.keys.map { -it.first }.max()?:0)
+    val maxY = max(infected.keys.map { it.second }.max()?:0, infected.keys.map { -it.second }.max()?:0)
     return buildSequence {
         yield('\n')
         (maxY downTo -maxY).forEach { y ->
             (-maxX .. maxX).forEach { x ->
-                if (infected.contains(Pair(x, y))) yield('#')
-                else yield('.')
+                val c = infected[Pair(x, y)]
+                yield(c ?: '.')
             }
             yield('\n')
         }
@@ -312,14 +414,15 @@ fun parseGrid(input: String): Grid = fillGrid(parseGridToLists(input))
 
 fun fillGrid(gridAsList: List<List<Char>>): Grid {
     val delta = gridAsList.size / 2
-    val nodeSet = buildSequence {
+    val nodeMap = buildSequence {
         gridAsList.forEachIndexed { y, row ->
             row.forEachIndexed { x, c ->
                 if (c == '#') yield(Pair(x - delta, delta - y))
             }
         }
-    }.toMutableSet()
-    return Grid(nodeSet, Pair(0,0), bursts = 0)
+    }
+    .map { Pair(it, '#') }.toMap().toMutableMap()
+    return Grid(nodeMap, Pair(0,0), bursts = 0)
 }
 
 fun parseGridToLists(input: String) =
