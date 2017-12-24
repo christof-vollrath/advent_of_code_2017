@@ -225,16 +225,26 @@ of the first 10000000 bursts, 2511944 will result in infection.
 Given your actual map, after 10000000 bursts of activity,
 how many bursts cause a node to become infected? (Do not count nodes that begin infected.)
 
+Your puzzle answer was 2511895.
 
  */
 
 class Day22Spec : Spek({
-    describe("part 1") {
+    describe("solution part 1") {
         given("day22 input") {
             val grid = parseGrid(day22ExerciseInput)
             on("10_000 step") {
-                grid.moveOneSteps(10_000)
-                println("Bursts: ${grid.bursts}")
+                grid.moveSteps(10_000)
+                println("Bursts in part 1: ${grid.bursts}")
+            }
+        }
+    }
+    describe("solution part 3") {
+        given("day22 input") {
+            val grid = parseGrid2(day22ExerciseInput)
+            on("10_000_000 step") {
+                grid.moveSteps(10_000_000)
+                println("Bursts in part 2: ${grid.bursts}")
             }
         }
     }
@@ -258,69 +268,70 @@ class Day22Spec : Spek({
             }
         }
     }
-    describe("move some steps") {
-        given("example input") {
-            val grid = parseGrid(day22ExampleInput)
-            on("first step") {
-                grid.moveOneStep()
-                it("should have changed") {
-                    grid.pos `should equal` Pair(-1, 0)
-                    grid.dir `should equal` Pair(-1, 0)
-                    grid.toString() `should equal` """
+    describe("part 1") {
+        describe("move some steps") {
+            given("example input") {
+                val grid = parseGrid(day22ExampleInput)
+                on("first step") {
+                    grid.moveOneStep()
+                    it("should have changed") {
+                        grid.pos `should equal` Pair(-1, 0)
+                        grid.dir `should equal` Pair(-1, 0)
+                        grid.toString() `should equal` """
 ..#
 ##.
 ...
 """
+                    }
                 }
-            }
-            on("second step") {
-                grid.moveOneStep()
-                it("should have changed again") {
-                    grid.pos `should equal` Pair(-1, 1)
-                    grid.dir `should equal` Pair(0, 1)
-                    grid.toString() `should equal` """
+                on("second step") {
+                    grid.moveOneStep()
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-1, 1)
+                        grid.dir `should equal` Pair(0, 1)
+                        grid.toString() `should equal` """
 ..#
 .#.
 ...
 """
+                    }
                 }
-            }
-            on("four more steps") {
-                grid.moveOneSteps(4)
-                it("should have changed again") {
-                    grid.pos `should equal` Pair(-1, 1)
-                    grid.dir `should equal` Pair(0, 1)
-                    grid.toString() `should equal` """
+                on("four more steps") {
+                    grid.moveSteps(4)
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-1, 1)
+                        grid.dir `should equal` Pair(0, 1)
+                        grid.toString() `should equal` """
 ##.#.
 ###..
 .....
 """
+                    }
                 }
-            }
-            on("four one more step") {
-                grid.moveOneSteps(1)
-                it("should have changed again") {
-                    grid.pos `should equal` Pair(0, 1)
-                    grid.dir `should equal` Pair(1, 0)
-                    grid.toString() `should equal` """
+                on("one more step") {
+                    grid.moveSteps(1)
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(0, 1)
+                        grid.dir `should equal` Pair(1, 0)
+                        grid.toString() `should equal` """
 #..#.
 ###..
 .....
 """
+                    }
                 }
             }
         }
-    }
-    describe("move 70 steps") {
-        given("example input") {
-            val grid = parseGrid(day22ExampleInput)
-            on("70 step") {
-                grid.moveOneSteps(70)
-                it("should have changed") {
-                    grid.pos `should equal` Pair(1, 1)
-                    grid.dir `should equal` Pair(0, 1)
-                    grid.bursts `should equal` 41
-                    grid.toString() `should equal` """
+        describe("move 70 steps") {
+            given("example input") {
+                val grid = parseGrid(day22ExampleInput)
+                on("70 step") {
+                    grid.moveSteps(70)
+                    it("should have changed") {
+                        grid.pos `should equal` Pair(1, 1)
+                        grid.dir `should equal` Pair(0, 1)
+                        grid.bursts `should equal` 41
+                        grid.toString() `should equal` """
 .....##..
 ....#..#.
 ...#....#
@@ -331,33 +342,128 @@ class Day22Spec : Spek({
 .........
 .........
 """
+                    }
+                }
+            }
+        }
+        describe("move 10_000 steps") {
+            given("example input") {
+                val grid = parseGrid(day22ExampleInput)
+                on("10_000 step") {
+                    grid.moveSteps(10_000)
+                    it("should have 5587 bursts") {
+                        grid.bursts `should equal` 5587
+                    }
                 }
             }
         }
     }
-    describe("move 10_000 steps") {
-        given("example input") {
-            val grid = parseGrid(day22ExampleInput)
-            on("10_000 step") {
-                grid.moveOneSteps(10_000)
-                it("should have 5587 bursts") {
-                    grid.bursts `should equal` 5587
+    describe("part 2") {
+        describe("move some steps") {
+            given("example input") {
+                val grid = parseGrid2(day22ExampleInput)
+                on("first step") {
+                    grid.moveOneStep()
+                    it("should have changed") {
+                        grid.pos `should equal` Pair(-1, 0)
+                        grid.dir `should equal` Pair(-1, 0)
+                        grid.toString() `should equal` """
+..#
+#W.
+...
+"""
+                    }
+                }
+                on("second step") {
+                    grid.moveOneStep()
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-1, 1)
+                        grid.dir `should equal` Pair(0, 1)
+                        grid.toString() `should equal` """
+..#
+FW.
+...
+"""
+                    }
+                }
+                on("three more steps") {
+                    grid.moveSteps(3)
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-1, 0)
+                        grid.dir `should equal` Pair(1, 0)
+                        grid.toString() `should equal` """
+WW.#.
+WFW..
+.....
+"""
+                    }
+                }
+                on("one more step in flagged mode") {
+                    grid.moveSteps(1)
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-2, 0)
+                        grid.dir `should equal` Pair(-1, 0)
+                        grid.toString() `should equal` """
+WW.#.
+W.W..
+.....
+"""
+                    }
+                }
+                on("one more step in weakened mode") {
+                    grid.moveSteps(1)
+                    it("should have changed again") {
+                        grid.pos `should equal` Pair(-3, 0)
+                        grid.dir `should equal` Pair(-1, 0)
+                        grid.toString() `should equal` """
+WW.#.
+#.W..
+.....
+"""
+                    }
+                }
+            }
+        }
+        describe("move 100 steps") {
+            given("example input") {
+                val grid = parseGrid2(day22ExampleInput)
+                on("100 step") {
+                    grid.moveSteps(100)
+                    it("should have 26 bursts") {
+                        grid.bursts `should equal` 26
+                    }
+                }
+            }
+        }
+        describe("move 10_000_000 steps") {
+            given("example input") {
+                val grid = parseGrid2(day22ExampleInput)
+                on("10_000_000 step") {
+                    grid.moveSteps(10_000_000)
+                    it("should have 2511944 bursts") {
+                        grid.bursts `should equal` 2511944
+                    }
                 }
             }
         }
     }
+
     describe("turn dir to the left or right") {
         val testData = arrayOf(
-                //     dir      |  turn|  result
-                //--|-----------|------|--------------
-                data(Pair( 1, 0), right, Pair( 0,-1)),
-                data(Pair( 0,-1), right, Pair(-1, 0)),
-                data(Pair(-1, 0), right, Pair( 0, 1)),
-                data(Pair( 0, 1), right, Pair( 1, 0)),
-                data(Pair( 1, 0),  left, Pair( 0, 1)),
-                data(Pair( 0, 1),  left, Pair(-1, 0)),
-                data(Pair(-1, 0),  left, Pair( 0,-1)),
-                data(Pair( 0,-1),  left, Pair( 1, 0))
+                //     dir      |  turn  |  result
+                //--|-----------|--------|--------------
+                data(Pair( 1, 0),   right, Pair( 0,-1)),
+                data(Pair( 0,-1),   right, Pair(-1, 0)),
+                data(Pair(-1, 0),   right, Pair( 0, 1)),
+                data(Pair( 0, 1),   right, Pair( 1, 0)),
+                data(Pair( 1, 0),    left, Pair( 0, 1)),
+                data(Pair( 0, 1),    left, Pair(-1, 0)),
+                data(Pair(-1, 0),    left, Pair( 0,-1)),
+                data(Pair( 0,-1),    left, Pair( 1, 0)),
+                data(Pair( 1, 0), reverse, Pair(-1, 0)),
+                data(Pair( 0, 1), reverse, Pair( 0,-1)),
+                data(Pair(-1, 0), reverse, Pair( 1, 0)),
+                data(Pair( 0,-1), reverse, Pair( 0, 1))
                 )
         onData("input %s %s", with = *testData) { dir, turn, expected ->
             it("returns $expected") {
@@ -367,22 +473,45 @@ class Day22Spec : Spek({
     }
 })
 
-data class Grid(val infected: MutableMap<Pair<Int, Int>,Char>, var pos: Pair<Int, Int>, var dir: Pair<Int, Int> = Pair(0, 1), var bursts: Int) {
+data class Grid(val infected: MutableMap<Pair<Int, Int>,Char>, var pos: Pair<Int, Int> = Pair(0, 0), var dir: Pair<Int, Int> = Pair(0, 1), var bursts: Int = 0) {
     fun moveOneStep() {
         if (infected[pos] == '#') {
             dir = rotate(dir, right)
             infected.remove(pos)
-            pos = movePos(pos, dir)
         } else {
             dir = rotate(dir, left)
             infected[pos] = '#'
-            pos = movePos(pos, dir)
             bursts++
         }
+        pos = movePos(pos, dir)
     }
-    fun moveOneSteps(n: Int) {
-        (1..n).forEach { moveOneStep() }
+    fun moveSteps(n: Int) =(1..n).forEach { moveOneStep() }
+    override fun toString() = gridToString(infected)
+}
+
+data class Grid2(val infected: MutableMap<Pair<Int, Int>,Char>, var pos: Pair<Int, Int> = Pair(0, 0), var dir: Pair<Int, Int> = Pair(0, 1), var bursts: Int = 0) {
+    fun moveOneStep() {
+        when(infected[pos]) {
+            '#' -> {
+                    dir = rotate(dir, right)
+                    infected[pos] = 'F'
+                }
+            'W' -> {
+                    infected[pos] = '#'
+                    bursts++
+                }
+            'F' -> {
+                    dir = rotate(dir, reverse)
+                    infected.remove(pos)
+                }
+            else -> {
+                    dir = rotate(dir, left)
+                    infected[pos] = 'W'
+                }
+        }
+        pos = movePos(pos, dir)
     }
+    fun moveSteps(n: Int) =(1..n).forEach { moveOneStep() }
     override fun toString() = gridToString(infected)
 }
 
@@ -392,8 +521,9 @@ fun rotate(dir: Pair<Int, Int>, turn: Array<IntArray>) =
 
 fun movePos(pos: Pair<Int, Int>, dir: Pair<Int, Int>) = Pair(pos.first + dir.first, pos.second + dir.second)
 
-val left  = arrayOf(intArrayOf(0,-1), intArrayOf( 1, 0))
-val right = arrayOf(intArrayOf(0, 1), intArrayOf(-1, 0))
+val left    = arrayOf(intArrayOf(0,-1), intArrayOf( 1, 0))
+val right   = arrayOf(intArrayOf(0, 1), intArrayOf(-1, 0))
+val reverse = arrayOf(intArrayOf(-1, 0), intArrayOf(0, -1))
 
 fun gridToString(infected: MutableMap<Pair<Int, Int>, Char>): String {
     val maxX = max(infected.keys.map { it.first }.max()?:0, infected.keys.map { -it.first }.max()?:0)
@@ -410,11 +540,12 @@ fun gridToString(infected: MutableMap<Pair<Int, Int>, Char>): String {
     }.joinToString("")
 }
 
-fun parseGrid(input: String): Grid = fillGrid(parseGridToLists(input))
+fun parseGrid(input: String): Grid = Grid(fillNodeMap(parseGridToLists(input)))
+fun parseGrid2(input: String): Grid2 = Grid2(fillNodeMap(parseGridToLists(input)))
 
-fun fillGrid(gridAsList: List<List<Char>>): Grid {
+fun fillNodeMap(gridAsList: List<List<Char>>): MutableMap<Pair<Int, Int>, Char> {
     val delta = gridAsList.size / 2
-    val nodeMap = buildSequence {
+    return buildSequence {
         gridAsList.forEachIndexed { y, row ->
             row.forEachIndexed { x, c ->
                 if (c == '#') yield(Pair(x - delta, delta - y))
@@ -422,7 +553,6 @@ fun fillGrid(gridAsList: List<List<Char>>): Grid {
         }
     }
     .map { Pair(it, '#') }.toMap().toMutableMap()
-    return Grid(nodeMap, Pair(0,0), bursts = 0)
 }
 
 fun parseGridToLists(input: String) =
