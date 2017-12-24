@@ -156,11 +156,11 @@ class Day18Spec : Spek({
         }
         on("add") {
             val duet = Duet()
-            it("should add to register a witch is empty") {
+            it("should add to register which is empty") {
                 Duet.Add('a', Duet.Const(3)).execute(duet)
                 duet.registers['a'] `should equal` 3L
             }
-            it("should add to register a witch contains 3") {
+            it("should add to register which contains 3") {
                 Duet.Add('a', Duet.Const(2)).execute(duet)
                 duet.registers['a'] `should equal` 5L
             }
@@ -218,7 +218,7 @@ class Day18Spec : Spek({
                 Duet.Jgz(Duet.Const(0), Duet.Const(3)).execute(duet)
                 duet.pc `should equal` 1
             }
-            it("should jump when non zero value") {
+            it("should jump when greater zero value") {
                 Duet.Jgz(Duet.Const(1), Duet.Const(3)).execute(duet)
                 duet.pc `should equal` 4
             }
@@ -304,7 +304,7 @@ data class Duet(val instructions: List<Instr> = listOf(),
     }
     data class Jgz(val r: Param, val i: Param) : Instr() {
         override fun execute(duet: Duet) {
-            if (r.value(duet) == 0L) duet.pc++
+            if (r.value(duet) <= 0L) duet.pc++
             else duet.pc = duet.pc + i.value(duet).toInt()
         }
     }
