@@ -6,6 +6,7 @@ import org.jetbrains.spek.api.dsl.on
 
 /*
 --- Day 18: Duet ---
+
 You discover a tablet containing some strange assembly code labeled simply "Duet".
 Rather than bother the sound card with it, you decide to run the code yourself.
 Unfortunately, you don't see any documentation, so you're left to figure out what the instructions mean on your own.
@@ -131,7 +132,7 @@ class Day18Spec : Spek({
             }
         }
         on("register parameter") {
-            val duet = Duet(registers = mapOf('a' to 5L))
+            val duet = Duet(registers = mutableMapOf('a' to 5L))
             it("should have value of register") {
                 Duet.Register('a').value(duet) `should equal` 5L
             }
@@ -141,78 +142,85 @@ class Day18Spec : Spek({
         on("set") {
             val duet = Duet()
             it("should set register a from value") {
-                val result = Duet.Set('a', Duet.Const(2)).execute(duet)
-                result.registers['a'] `should equal` 2L
-                result.pc `should equal` 1
+                Duet.Set('a', Duet.Const(2)).execute(duet)
+                duet.registers['a'] `should equal` 2L
             }
             it("should set register b from register a") {
-                val duetWithA = Duet.Set('a', Duet.Const(3)).execute(duet)
-                val result = Duet.Set('b', Duet.Register('a')).execute(duetWithA)
-                result.registers['b'] `should equal` 3L
-                result.pc `should equal` 2
+                Duet.Set('b', Duet.Register('a')).execute(duet)
+                duet.registers['b'] `should equal` 2L
             }
-            it("should set register b from register a when a is empty") {
-                Duet.Set('b', Duet.Register('a')).execute(duet).registers['b'] `should equal` 0L
+            it("should set register b from empty register c") {
+                Duet.Set('b', Duet.Register('c')).execute(duet)
+                duet.registers['b'] `should equal` 0L
             }
         }
         on("add") {
             val duet = Duet()
-            val duetWithA = Duet.Set('a', Duet.Const(2)).execute(duet)
             it("should add to register a witch is empty") {
-                Duet.Add('a', Duet.Const(3)).execute(duet).registers['a'] `should equal` 3L
+                Duet.Add('a', Duet.Const(3)).execute(duet)
+                duet.registers['a'] `should equal` 3L
             }
-            it("should add to register a witch contains 2") {
-                val result = Duet.Add('a', Duet.Const(3)).execute(duetWithA)
-                result.registers['a'] `should equal` 5L
-                result.pc `should equal` 2
+            it("should add to register a witch contains 3") {
+                Duet.Add('a', Duet.Const(2)).execute(duet)
+                duet.registers['a'] `should equal` 5L
             }
             it("should add a to register b") {
-                Duet.Add('b', Duet.Register('a')).execute(duetWithA).registers['a'] `should equal` 2L
+                Duet.Add('b', Duet.Register('a')).execute(duet)
+                duet.registers['a'] `should equal` 5L
             }
-            it("should add empty a to register b") {
-                Duet.Add('b', Duet.Register('a')).execute(duet).registers['b'] `should equal` 0L
+            it("should add empty c to register b") {
+                Duet.Add('b', Duet.Register('c')).execute(duet)
+                duet.registers['b'] `should equal` 5L
             }
         }
         on("mul") {
             val duet = Duet()
-            val duetWithA = Duet.Set('a', Duet.Const(2)).execute(duet)
+            Duet.Set('a', Duet.Const(2)).execute(duet)
             it("should multiply register a and value") {
-                Duet.Mul('a', Duet.Const(3)).execute(duetWithA).registers['a'] `should equal` 6L
+                Duet.Mul('a', Duet.Const(3)).execute(duet)
+                duet.registers['a'] `should equal` 6L
             }
         }
         on("mod") {
             val duet = Duet()
-            val duetWithA = Duet.Set('a', Duet.Const(5)).execute(duet)
+            Duet.Set('a', Duet.Const(5)).execute(duet)
             it("should calculate register a mod value") {
-                Duet.Mod('a', Duet.Const(3)).execute(duetWithA).registers['a'] `should equal` 2L
+                Duet.Mod('a', Duet.Const(3)).execute(duet)
+                duet.registers['a'] `should equal` 2L
             }
         }
         on("snd") {
             val duet = Duet()
-            val duetWithA = Duet.Set('a', Duet.Const(5)).execute(duet)
+            Duet.Set('a', Duet.Const(5)).execute(duet)
             it("should sound frequency") {
-                Duet.SoundPart1(Duet.Const(4)).execute(duet).sound `should equal` 4L
+                Duet.SoundPart1(Duet.Const(4)).execute(duet)
+                duet.sound `should equal` 4L
             }
             it("should sound frequenc from register") {
-                Duet.SoundPart1(Duet.Register('a')).execute(duetWithA).sound `should equal` 5L
+                Duet.SoundPart1(Duet.Register('a')).execute(duet)
+                duet.sound `should equal` 5L
             }
         }
         on("rcv") {
             val duet = Duet()
-            it("should stop when non zero value") {
-                Duet.RcvSoundPart1(Duet.Const(1)).execute(duet).stop `should equal` true
-            }
             it("should not stop when zero value") {
-                Duet.RcvSoundPart1(Duet.Const(0)).execute(duet).stop `should equal` false
+                Duet.RcvSoundPart1(Duet.Const(0)).execute(duet)
+                duet.stop `should equal` false
+            }
+            it("should stop when non zero value") {
+                Duet.RcvSoundPart1(Duet.Const(1)).execute(duet)
+                duet.stop `should equal` true
             }
         }
         on("jgz") {
             val duet = Duet()
-            it("should jump when non zero value") {
-                Duet.Jgz(Duet.Const(1), Duet.Const(3)).execute(duet).pc `should equal` 3
-            }
             it("should not jump when zero value") {
-                Duet.Jgz(Duet.Const(0), Duet.Const(3)).execute(duet).pc `should equal` 1
+                Duet.Jgz(Duet.Const(0), Duet.Const(3)).execute(duet)
+                duet.pc `should equal` 1
+            }
+            it("should jump when non zero value") {
+                Duet.Jgz(Duet.Const(1), Duet.Const(3)).execute(duet)
+                duet.pc `should equal` 4
             }
         }
     }
@@ -240,6 +248,7 @@ class Day18Spec : Spek({
             val instructions = parseDuetInstructions(day18Input)
             val received = Duet(instructions).execute().sound
             println("sound received: $received")
+            received `should equal` 8600L
         }
     }
 
@@ -247,66 +256,56 @@ class Day18Spec : Spek({
 
 data class Duet(val instructions: List<Instr> = listOf(),
                 val id: Int = 0,
-                val registers: Map<Char, Long> = mapOf(),
-                val sound: Long = 0,
-                val pc: Int = 0,
-                val stop: Boolean = false) {
+                val registers: MutableMap<Char, Long> = mutableMapOf(),
+                var sound: Long = 0,
+                var pc: Int = 0,
+                var stop: Boolean = false) {
     fun execute(): Duet {
-        var current = this
-        while (! current.stop) {
-            val instruction = current.instructions[current.pc]
-            println("pc: ${current.pc} instr: $instruction sound: ${current.sound} registers: ${current.registers}")
-            current = instruction.execute(current)
+        while (! stop) {
+            val instruction = instructions[pc]
+            println("pc: ${pc} instr: $instruction sound: ${sound} registers: ${registers}")
+            instruction.execute(this)
+            if (instruction !is Jgz) pc++
         }
-        return current
+        return this
     }
     abstract class Instr() {
-        abstract fun execute(duet: Duet): Duet
+        abstract fun execute(duet: Duet)
     }
     data class Set(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet): Duet {
-            val changedRegisters = duet.registers.toMutableMap()
-            changedRegisters.set(r, i.value(duet))
-            return duet.copy(registers = changedRegisters, pc = duet.pc + 1)
+        override fun execute(duet: Duet) {
+            duet.registers.set(r, i.value(duet))
         }
     }
     data class Add(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet): Duet {
-            val changedRegisters = duet.registers.toMutableMap()
-            val changedReg = (duet.registers[r]?:0) + i.value(duet)
-            changedRegisters.set(r, changedReg)
-            return duet.copy(registers = changedRegisters, pc = duet.pc + 1)
+        override fun execute(duet: Duet) {
+            duet.registers[r] = (duet.registers[r]?:0) + i.value(duet)
         }
     }
     data class Mul(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet): Duet {
-            val changedRegisters = duet.registers.toMutableMap()
-            val changedReg = (duet.registers[r]?:0) * i.value(duet)
-            changedRegisters.set(r, changedReg)
-            return duet.copy(registers = changedRegisters, pc = duet.pc + 1)
+        override fun execute(duet: Duet) {
+            duet.registers[r] = (duet.registers[r]?:0) * i.value(duet)
         }
     }
     data class Mod(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet): Duet {
-            val changedRegisters = duet.registers.toMutableMap()
-            val changedReg = (duet.registers[r]?:0) % i.value(duet)
-            changedRegisters.set(r, changedReg)
-            return duet.copy(registers = changedRegisters, pc = duet.pc + 1)
+        override fun execute(duet: Duet) {
+            duet.registers[r] = (duet.registers[r]?:0) % i.value(duet)
         }
     }
     data class SoundPart1(val i: Param) : Instr() {
-        override fun execute(duet: Duet) = duet.copy(sound = i.value(duet), pc = duet.pc + 1)
+        override fun execute(duet: Duet) {
+            duet.sound = i.value(duet)
+        }
     }
     data class RcvSoundPart1(val i: Param) : Instr() {
-        override fun execute(duet: Duet) = with (i.value(duet)) {
-            if (this == 0L) duet.copy(pc = duet.pc + 1)
-            else duet.copy(stop = true)
+        override fun execute(duet: Duet) {
+            if (i.value(duet) != 0L) duet.stop = true
         }
     }
     data class Jgz(val r: Param, val i: Param) : Instr() {
-        override fun execute(duet: Duet) = with (r.value(duet)) {
-            if (this == 0L) duet.copy(pc = duet.pc + 1)
-            else duet.copy(pc = duet.pc + i.value(duet).toInt())
+        override fun execute(duet: Duet) {
+            if (r.value(duet) == 0L) duet.pc++
+            else duet.pc = duet.pc + i.value(duet).toInt()
         }
     }
 
