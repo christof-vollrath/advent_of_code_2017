@@ -31,7 +31,23 @@ If you run the program (your puzzle input), how many times is the mul instructio
 
 Your puzzle answer was 9409.
 
+--- Part Two ---
 
+Now, it's time to fix the problem.
+
+The debug mode switch is wired directly to register a.
+You flip the switch, which makes register a now start at 1 when the program is executed.
+
+Immediately, the coprocessor begins to overheat.
+Whoever wrote this program obviously didn't choose a very efficient implementation.
+You'll need to optimize the program if it has any hope of completing before Santa needs that printer working.
+
+The coprocessor's ultimate goal is to determine the final value left in register h once the program completes.
+Technically, if it had that... it wouldn't even need to run the program.
+
+After setting register a to 1, if the program were to run to completion, what value would be left in register h?
+
+(Detailed explanation for part 2 see: https://github.com/dp1/AoC17/blob/master/day23.5.txt)
  */
 
 class Day23Spec : Spek({
@@ -109,7 +125,7 @@ class Day23Spec : Spek({
             }
         }
     }
-    describe("execute exercise instructions") {
+    describe("part 1") {
         on("exercise input") {
             val input = day23Input
             var mulCounter = 0
@@ -117,8 +133,16 @@ class Day23Spec : Spek({
                 if (instr is Coprocessor.Mul) mulCounter++
             }
             Coprocessor(parseCoprocessorInstructions(input), debug = debugger).execute()
-            println("Number mul invocations: $mulCounter")
+            println("Number mul invocations (part 1): $mulCounter")
             mulCounter `should equal` 9409
+        }
+    }
+    describe("part 2") {
+        on("exercise input") {
+            val input = day23Input
+            val registers = mutableMapOf('a' to 1L)
+            Coprocessor(parseCoprocessorInstructions(input), registers = registers).execute()
+            println("Register h (part 2): ${registers['h']} e: ${registers['e']} g: ${registers['g']}")
         }
     }
 
@@ -130,11 +154,21 @@ data class Coprocessor(val instructions: List<Instr> = listOf(),
                        val registers: MutableMap<Char, Long> = mutableMapOf(),
                        var pc: Int = 0,
                        val debug: Debugger? = null) {
+    var nrExecutions = 0 // to prevent endless loops
 
     fun execute(): Coprocessor {
-        while (pc < instructions.size) {
+        while (true) {
+            if (pc >= instructions.size) {
+                println("Illegal instruction access")
+                break
+            }
+            if (nrExecutions > 1_000_000) {
+                println("Program terminated because of overheating")
+                break
+            }
+            nrExecutions++
             val instruction = instructions[pc]
-            println("pc: ${pc} instr: $instruction registers: ${registers}")
+            //println("pc: ${pc} instr: $instruction registers: ${registers}")
             instruction.execute(this)
             if (debug != null) debug.invoke(instruction, registers, pc)
             if (instruction !is Jnz) pc++
@@ -201,6 +235,7 @@ fun parseCoprocessorParamenter(par: String): Coprocessor.Param =
         if (par[0].isLetter()) Coprocessor.Register(par[0])
         else Coprocessor.Const(par.toLong())
 fun parseCoprocessorRegister(par: String): Char = par[0]
+
 
 val day23Input = """
 set b 99
