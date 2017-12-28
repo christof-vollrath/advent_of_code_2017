@@ -1,3 +1,6 @@
+import kotlinx.coroutines.experimental.channels.Channel
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -112,13 +115,16 @@ and then stopped at the first rcv before program 1 executed even its first instr
 Once both of your programs have terminated (regardless of what caused them to do so),
 how many times did program 1 send a value?
 
+Your puzzle answer was 7239.
+
+
  */
 
 class Day18Spec : Spek({
     describe("duet") {
         on("example input") {
             it("should have last sound played 4") {
-                val instructions = parseDuetInstructions(day18ExampleInput)
+                val instructions = parseDuetInstructions(day18ExampleInputPart1)
                 Duet(instructions).execute().sound `should equal` 4L
             }
         }
@@ -226,7 +232,7 @@ class Day18Spec : Spek({
     }
     describe("parse instructions") {
         on("example input") {
-            val input = day18ExampleInput
+            val input = day18ExampleInputPart1
             it("should parse to the correct instructions") {
                 parseDuetInstructions(input) `should equal` listOf(
                         Duet.Set('a', Duet.Const(1)),
@@ -251,7 +257,43 @@ class Day18Spec : Spek({
             received `should equal` 8600L
         }
     }
-
+    describe("duet part 2 example") {
+        on("example input part 2") {
+            val instructions = parseDuetInstructions(day18ExampleInputPart2, useAsyncOps = true)
+            val messageBoard = MessageBoard()
+            runBlocking {
+                val job0 = launch {
+                    Duet(instructions, id = 0, messageBoard = messageBoard).executeAsync()
+                }
+                val job1 = launch {
+                    Duet(instructions, id = 1, messageBoard = messageBoard).executeAsync()
+                }
+                job0.join()
+                job1.join()
+            }
+            messageBoard.sendCounters[0] `should equal` 3
+            messageBoard.sendCounters[1] `should equal` 3
+        }
+    }
+    describe("duet part 2") {
+        on("exercise input") {
+            val instructions = parseDuetInstructions(day18Input, useAsyncOps = true)
+            val messageBoard = MessageBoard()
+            runBlocking {
+                val job0 = launch {
+                    Duet(instructions, id = 0, messageBoard = messageBoard).executeAsync()
+                }
+                val job1 = launch {
+                    Duet(instructions, id = 1, messageBoard = messageBoard).executeAsync()
+                }
+                job0.join()
+                job1.join()
+            }
+            println("sendCounters[0]=${messageBoard.sendCounters[0]} sendCounters[1]=${messageBoard.sendCounters[1]}")
+            messageBoard.sendCounters[0] `should equal` 7239
+            messageBoard.sendCounters[1] `should equal` 7366
+        }
+    }
 })
 
 data class Duet(val instructions: List<Instr> = listOf(),
@@ -259,51 +301,77 @@ data class Duet(val instructions: List<Instr> = listOf(),
                 val registers: MutableMap<Char, Long> = mutableMapOf(),
                 var sound: Long = 0,
                 var pc: Int = 0,
-                var stop: Boolean = false) {
-    fun execute(): Duet {
+                var stop: Boolean = false,
+                val messageBoard: MessageBoard? = null) {
+    fun execute() = runBlocking {
+        executeAsync()
+    }
+    suspend fun executeAsync(): Duet {
+        registers['p'] = id.toLong()
         while (! stop) {
             val instruction = instructions[pc]
-            println("pc: ${pc} instr: $instruction sound: ${sound} registers: ${registers}")
-            instruction.execute(this)
+            println("id: $id pc: ${pc} instr: $instruction sound: $sound registers: $registers")
+            instruction.executeAsync(this@Duet)
             if (instruction !is Jgz) pc++
         }
         return this
     }
     abstract class Instr() {
-        abstract fun execute(duet: Duet)
+        fun execute(duet: Duet) = runBlocking {
+            executeAsync(duet)
+        }
+        abstract suspend fun executeAsync(duet: Duet)
     }
     data class Set(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             duet.registers.set(r, i.value(duet))
         }
     }
     data class Add(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             duet.registers[r] = (duet.registers[r]?:0) + i.value(duet)
         }
     }
     data class Mul(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             duet.registers[r] = (duet.registers[r]?:0) * i.value(duet)
         }
     }
     data class Mod(val r: Char, val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             duet.registers[r] = (duet.registers[r]?:0) % i.value(duet)
         }
     }
     data class SoundPart1(val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             duet.sound = i.value(duet)
         }
     }
     data class RcvSoundPart1(val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             if (i.value(duet) != 0L) duet.stop = true
         }
     }
+    data class SndPart2(val i: Param) : Instr() {
+        override suspend fun executeAsync(duet: Duet) {
+            val receiver = if (duet.id == 0) 1 else 0
+            duet.messageBoard?.send(receiver, i.value(duet))
+        }
+
+    }
+    data class RcvPart2(val r: Char) : Instr() {
+        override suspend fun executeAsync(duet: Duet) {
+            if (duet.messageBoard == null) return
+            try {
+                duet.registers[r] =  duet.messageBoard.receive(duet.id)
+            } catch (e: IllegalArgumentException) {
+                println("Deadlock!")
+                duet.stop = true
+            }
+        }
+    }
     data class Jgz(val r: Param, val i: Param) : Instr() {
-        override fun execute(duet: Duet) {
+        override suspend fun executeAsync(duet: Duet) {
             if (r.value(duet) <= 0L) duet.pc++
             else duet.pc = duet.pc + i.value(duet).toInt()
         }
@@ -320,8 +388,35 @@ data class Duet(val instructions: List<Instr> = listOf(),
     }
 }
 
+class MessageBoard {
+    val channels = listOf(Channel<Long>(Channel.UNLIMITED), Channel<Long>(Channel.UNLIMITED))
+    val sendCounters = mutableListOf(0 , 0)
+    val waiting = mutableListOf(false, false)
 
-fun parseDuetInstructions(input: String) =
+    suspend fun send(receiver: Int, value: Long) {
+        waiting[receiver] = false
+        channels[receiver].send(value)
+        sendCounters[receiver]++
+    }
+    suspend fun receive(id: Int): Long {
+        val immediateResult = channels[id].poll()
+        if (immediateResult != null) return immediateResult
+        waiting[id] = true
+        if (checkDeadlock()) {
+            val error = IllegalArgumentException("Deadlock")
+            channels.forEach { it.close(error) }
+            throw error
+        }
+        val result = channels[id].receive()
+        waiting[id] = false
+        return result
+    }
+    fun checkDeadlock(): Boolean {
+        return waiting.all { it }
+    }
+}
+
+fun parseDuetInstructions(input: String, useAsyncOps: Boolean = false) =
         input.split("\n")
         .mapIndexed { index, s ->  Pair(index, s)}
         .filter { ! it.second.isBlank() }
@@ -335,8 +430,10 @@ fun parseDuetInstructions(input: String) =
                         "add" -> Duet.Add(parseRegister(par1), parseParamenter(par2!!))
                         "mul" -> Duet.Mul(parseRegister(par1), parseParamenter(par2!!))
                         "mod" -> Duet.Mod(parseRegister(par1), parseParamenter(par2!!))
-                        "snd" -> Duet.SoundPart1(parseParamenter(par1))
-                        "rcv" -> Duet.RcvSoundPart1(parseParamenter(par1))
+                        "snd" -> if (useAsyncOps) Duet.SndPart2(parseParamenter(par1))
+                                 else Duet.SoundPart1(parseParamenter(par1))
+                        "rcv" -> if (useAsyncOps) Duet.RcvPart2(parseRegister(par1))
+                                 else Duet.RcvSoundPart1(parseParamenter(par1))
                         "jgz" -> Duet.Jgz(parseParamenter(par1), parseParamenter(par2!!))
                         else -> throw IllegalArgumentException("Cmd: $cmd illegal, line ${it.first}")
                     }
@@ -348,7 +445,7 @@ fun parseParamenter(par: String): Duet.Param =
 fun parseRegister(par: String): Char = par[0]
 
 
-val day18ExampleInput = """
+val day18ExampleInputPart1 = """
         set a 1
         add a 2
         mul a a
@@ -359,6 +456,16 @@ val day18ExampleInput = """
         jgz a -1
         set a 1
         jgz a -2
+        """
+
+val day18ExampleInputPart2 = """
+        snd 1
+        snd 2
+        snd p
+        rcv a
+        rcv b
+        rcv c
+        rcv d
         """
 
 val day18Input = """
