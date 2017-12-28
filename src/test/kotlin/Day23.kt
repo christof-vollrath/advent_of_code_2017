@@ -3,6 +3,7 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import kotlin.coroutines.experimental.buildSequence
 
 /*
 --- Day 23: Coprocessor Conflagration ---
@@ -47,7 +48,8 @@ Technically, if it had that... it wouldn't even need to run the program.
 
 After setting register a to 1, if the program were to run to completion, what value would be left in register h?
 
-(Detailed explanation for part 2 see: https://github.com/dp1/AoC17/blob/master/day23.5.txt)
+Your puzzle answer was 913.
+
  */
 
 class Day23Spec : Spek({
@@ -145,8 +147,71 @@ class Day23Spec : Spek({
             println("Register h (part 2): ${registers['h']} e: ${registers['e']} g: ${registers['g']}")
         }
     }
+    describe("part 2 primes") {
+        /*
+         Thanks to the analysis of Dario Petrillo in https://github.com/dp1/AoC17/blob/master/day23.5.txt
+         the program is equivalent to this python code:
+            b = 109900
+            c = 126900
+
+            for b in range(109900, c + 1, 17):
+                if not prime(b):
+                    h += 1
+
+          But it uses a very inefficent algorithm to test for primality testing.
+         */
+        on("an example with smaller numbers") {
+            val from = 2
+            val to = 200
+            val step = 17
+            it("should find 3 primes") {
+                findNotPrimes(from, to, step) `should equal` listOf(36, 70, 87, 104, 121, 138, 155, 172, 189)
+            }
+        }
+        on("exercise input") {
+            val from = 109900
+            val to = 126900 + 1
+            val step = 17
+            val h = findNotPrimes(from, to, step).size
+            println("h=$h")
+            it("should have the correct value") {
+                h `should equal` 913
+            }
+        }
+    }
+    describe("Sieve of Eratosthenes") {
+        it("2 should be prime") {
+            sieve(2).toList() `should equal` listOf(2)
+        }
+        it("should find some more primes") {
+            sieve(10).toList() `should equal` listOf(2, 3, 5, 7)
+        }
+    }
 
 })
+
+fun findNotPrimes(from: Int, to: Int, step: Int) = buildSequence {
+    val primes = sieve(to).toSet()
+    (from..to step(step)).forEach {
+        if (! primes.contains(it)) yield(it)
+    }
+}.toList()
+
+fun sieve(to: Int): Sequence<Int> { // See https://rosettacode.org/wiki/Sieve_of_Eratosthenes#Kotlin
+    val primeCandidates = Array(to + 1) { true }
+    val sqrtLimit = Math.sqrt(to.toDouble()).toInt()
+    (2..sqrtLimit).forEach { factor ->
+        if (primeCandidates[factor]) {
+            (factor*factor..to step factor).forEach { primeCandidates[it] = false}
+        }
+    }
+    // Eliminate prime
+    return buildSequence {
+        (2..to).forEach {
+            if (primeCandidates[it]) yield(it)
+        }
+    }
+}
 
 typealias Debugger = (Coprocessor.Instr, Map<Char, Long>, Int) -> Unit
 
