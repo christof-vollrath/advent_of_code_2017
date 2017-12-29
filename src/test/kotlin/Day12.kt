@@ -131,9 +131,9 @@ fun createGraphFromConnections(connections: List<Connection>): Graph {
     connections.forEach {
         val node = nodeMap[it.id]
         if (node != null)
-            node.connectedTo = it.connected.map { nodeMap[it] }.filterNotNull()
+            node.connectedTo = it.connected.mapNotNull { nodeMap[it] }
     }
-    val nodeList = connections.map { nodeMap[it.id] }.filterNotNull()
+    val nodeList = connections.mapNotNull { nodeMap[it.id] }
     return Graph(nodeList)
 }
 

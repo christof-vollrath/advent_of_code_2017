@@ -1,9 +1,9 @@
+
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.jetbrains.spek.api.dsl.xdescribe
 
 /*
 --- Day 25: The Halting Problem ---
@@ -134,13 +134,13 @@ class Day25Spec : Spek({
             }
         }
         on("tape with one 1") {
-            val tape = setOf<Int>(0)
+            val tape = setOf(0)
             it("should be string 1") {
                 tapeToString(tape) `should equal` "1"
             }
         }
         on("tape with some positions set to 1") {
-            val tape = setOf<Int>(0, -5, 3)
+            val tape = setOf(0, -5, 3)
             it("should be correct string") {
                 tapeToString(tape) `should equal` "100001001"
             }
@@ -181,8 +181,7 @@ class TuringMachine(var state: Char, val diagnosticSteps: Int, val stateTable: M
     }
 
     fun execute() {
-        val instr = stateTable[Pair(state, valueAt(pos, tape))]
-        if (instr == null) throw IllegalArgumentException("State table incomplete for state $state ${valueAt(pos, tape)}")
+        val instr = stateTable[Pair(state, valueAt(pos, tape))] ?: throw IllegalArgumentException("State table incomplete for state $state ${valueAt(pos, tape)}")
         setValue(pos, tape, instr.write)
         if (instr.direction == TuringDirection.RIGHT) pos++
         else pos--

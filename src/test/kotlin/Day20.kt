@@ -1,9 +1,9 @@
+
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import kotlin.coroutines.experimental.buildSequence
 
 /*
 --- Day 20: Particle Swarm ---
@@ -217,13 +217,6 @@ fun parseTriple(string: String): Triple<Long, Long, Long> {
 val day20Part1ExamleInput = """
     p=< 3,0,0>, v=< 2,0,0>, a=<-1,0,0>
     p=< 4,0,0>, v=< 0,0,0>, a=<-2,0,0>
-"""
-
-val day20Part2ExampleInput = """
-    p=<-6,0,0>, v=< 3,0,0>, a=< 0,0,0>
-    p=<-4,0,0>, v=< 2,0,0>, a=< 0,0,0>
-    p=<-2,0,0>, v=< 1,0,0>, a=< 0,0,0>
-    p=< 3,0,0>, v=<-1,0,0>, a=< 0,0,0>
 """
 
 

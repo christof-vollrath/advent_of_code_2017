@@ -1,6 +1,10 @@
+
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.*
+import org.jetbrains.spek.api.dsl.describe
+import org.jetbrains.spek.api.dsl.given
+import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.on
 import kotlin.coroutines.experimental.buildSequence
 
 /*
@@ -243,9 +247,9 @@ fun constructBridges(port: Int, remainingParts: List<Pair<Int,Int>>): Set<List<P
 
 fun findAllFittingParts(port: Int, remainingParts: List<Pair<Int, Int>>) = buildSequence {
     remainingParts.forEach {
-        when {
-            it.first == port -> yield(Pair(it, it.second))
-            it.second == port -> yield(Pair(it, it.first))
+        when (port) {
+            it.first -> yield(Pair(it, it.second))
+            it.second -> yield(Pair(it, it.first))
             else -> {}
         }
     }

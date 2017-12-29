@@ -4,7 +4,6 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.jetbrains.spek.api.dsl.xdescribe
 import java.lang.Math.sqrt
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.roundToInt

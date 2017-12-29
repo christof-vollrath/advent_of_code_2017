@@ -235,18 +235,18 @@ data class Coprocessor(val instructions: List<Instr> = listOf(),
             val instruction = instructions[pc]
             //println("pc: ${pc} instr: $instruction registers: ${registers}")
             instruction.execute(this)
-            if (debug != null) debug.invoke(instruction, registers, pc)
+            debug?.invoke(instruction, registers, pc)
             if (instruction !is Jnz) pc++
         }
         return this
     }
 
-    abstract class Instr() {
+    abstract class Instr {
         abstract fun execute(coprocessor: Coprocessor)
     }
     data class Set(val r: Char, val i: Param) : Instr() {
         override fun execute(coprocessor: Coprocessor) {
-            coprocessor.registers.set(r, i.value(coprocessor))
+            coprocessor.registers[r] = i.value(coprocessor)
         }
     }
     data class Sub(val r: Char, val i: Param) : Instr() {
@@ -266,7 +266,7 @@ data class Coprocessor(val instructions: List<Instr> = listOf(),
         }
     }
 
-    abstract class Param() {
+    abstract class Param {
         abstract fun value(coprocessor: Coprocessor): Long
     }
     data class Const(val v: Long) : Param() {

@@ -6,7 +6,6 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.jetbrains.spek.api.dsl.xdescribe
 
 /*
 --- Day 16: Permutation Promenade ---
@@ -184,7 +183,7 @@ data class Exchange(val pos1: Int, val pos2: Int) : DanceMove() {
     override fun move(before: List<Char>): List<Char> {
         val p1 = before[pos1]
         val p2 = before[pos2]
-        return before.mapIndexed() { i, p ->
+        return before.mapIndexed { i, p ->
             when(i) {
                 pos1 -> p2
                 pos2 -> p1
@@ -195,7 +194,7 @@ data class Exchange(val pos1: Int, val pos2: Int) : DanceMove() {
 }
 data class Partner(val name1: Char, val name2: Char) : DanceMove() {
     override fun move(before: List<Char>): List<Char> =
-        before.map() {
+        before.map {
             when (it) {
                 name1 -> name2
                 name2 -> name1

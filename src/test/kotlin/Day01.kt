@@ -58,11 +58,14 @@ Your puzzle answer was 1024.
 
 
 fun <E> List<E>.shiftLeft() = if (this.isEmpty()) this else this.drop(1) + this.first()
-fun <E> List<E>.shiftLeft(n: Int): List<E> = when(n) {
+tailrec fun <E> List<E>.shiftLeft(n: Int): List<E> = if (n == 0) this else shiftLeft().shiftLeft(n-1)
+        /*
+        when(n) {
     0 -> this
     1 -> shiftLeft()
     else -> shiftLeft().shiftLeft(n-1)
 }
+*/
 
 fun CharSequence.splitToDigits() = if (this.isEmpty()) listOf()
                                     else this.map { Character.getNumericValue(it) }

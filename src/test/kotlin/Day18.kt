@@ -316,7 +316,7 @@ data class Duet(val instructions: List<Instr> = listOf(),
         }
         return this
     }
-    abstract class Instr() {
+    abstract class Instr {
         fun execute(duet: Duet) = runBlocking {
             executeAsync(duet)
         }
@@ -324,7 +324,7 @@ data class Duet(val instructions: List<Instr> = listOf(),
     }
     data class Set(val r: Char, val i: Param) : Instr() {
         override suspend fun executeAsync(duet: Duet) {
-            duet.registers.set(r, i.value(duet))
+            duet.registers[r] = i.value(duet)
         }
     }
     data class Add(val r: Char, val i: Param) : Instr() {
@@ -377,7 +377,7 @@ data class Duet(val instructions: List<Instr> = listOf(),
         }
     }
 
-    abstract class Param() {
+    abstract class Param {
         abstract fun value(duet: Duet): Long
     }
     data class Const(val v: Long) : Param() {
@@ -389,7 +389,7 @@ data class Duet(val instructions: List<Instr> = listOf(),
 }
 
 class MessageBoard {
-    val channels = listOf(Channel<Long>(Channel.UNLIMITED), Channel<Long>(Channel.UNLIMITED))
+    val channels = listOf(Channel<Long>(Channel.UNLIMITED), Channel(Channel.UNLIMITED))
     val sendCounters = mutableListOf(0 , 0)
     val waiting = mutableListOf(false, false)
 

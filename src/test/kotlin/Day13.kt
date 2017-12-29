@@ -343,9 +343,9 @@ class Firewall(layersDef: Map<Int, Int>) {
         // Range 3: 0, 1, 2, 1, 0 => 0, 1, 2, (4-3), (4-4)
         val hRange = (range - 1) * 2
         val modSec = psec % hRange
-        if (modSec >= range - 1)
-            return hRange - modSec
-        else return modSec
+        return if (modSec >= range - 1)
+            hRange - modSec
+        else modSec
     }
 
     fun severity(delay: Int) = layerRanges.mapIndexed { depth, range ->

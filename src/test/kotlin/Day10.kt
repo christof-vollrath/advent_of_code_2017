@@ -1,3 +1,4 @@
+
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -5,7 +6,6 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.data_driven.data
 import org.jetbrains.spek.data_driven.on as onData
-import kotlin.coroutines.experimental.buildSequence
 
 /*
 --- Day 10: Knot Hash ---
@@ -135,9 +135,9 @@ Your puzzle answer was c500ffe015c83b60fad2e4b7d59dabc4.
 
 fun indexCircula(index: Int, length: Int) = index % length
 
-fun <T> List<T>.getCircula(i: Int) = this.get(indexCircula(i, this.size))
+fun <T> List<T>.getCircula(i: Int) = this[indexCircula(i, this.size)]
 fun <T> MutableList<T>.setCircula(i: Int, value: T) = this.set(indexCircula(i, this.size), value)
-fun <T> List<T>.subListCircula(from: Int, to: Int) = (from..to-1).map { this.getCircula(it) }
+fun <T> List<T>.subListCircula(from: Int, to: Int) = (from until to).map { this.getCircula(it) }
 fun <T> MutableList<T>.setCircula(start: Int, values: List<T>) = this.apply {
     values.forEachIndexed { i, v -> this.setCircula(i + start, v) }
 }
@@ -164,18 +164,14 @@ fun asciiToList(string: String) = string.toList().map { it.toInt() }
 
 fun reduceBlock(block: List<Int>) = block.reduce { x, y -> x xor y }
 
-fun denseHash(hash: List<Int>) = buildSequence {
-    for (i in 0..(hash.size / 16 -1)) {
-        val block = hash.subList(i * 16, i * 16 + 16)
-        yield(reduceBlock(block))
-    }
-}.toList()
+fun denseHash(hash: List<Int>) =
+    (0..(hash.size / 16 -1))
+            .map { reduceBlock(hash.subList(it * 16, it * 16 + 16)) }
 
 fun List<Int>.toHex() =
-        this.map {
+        this.joinToString("") {
             it.toString(16).padStart(2, '0')
         }
-        .joinToString("")
 
 fun hash(input: String, length: Int = 256): List<Int> {
     val inputList = asciiToList(input)

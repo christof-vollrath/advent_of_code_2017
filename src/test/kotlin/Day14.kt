@@ -4,7 +4,6 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.jetbrains.spek.api.dsl.xdescribe
 
 /*
 --- Day 14: Disk Defragmentation ---
@@ -122,10 +121,9 @@ fun toBinList(hashes: List<List<Int>>) = hashes.map { it.toBin() }
 
 
 fun List<Int>.toBin() =
-        this.map {
+        this.joinToString("") {
             it.toString(2).padStart(8, '0')
         }
-                .joinToString("")
 
 class Day14Spec : Spek({
     describe("list<Int> to bin") {

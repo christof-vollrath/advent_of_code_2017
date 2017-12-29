@@ -1,10 +1,13 @@
+
 import org.amshove.kluent.`should equal`
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.*
+import org.jetbrains.spek.api.dsl.describe
+import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.data_driven.data
-import org.jetbrains.spek.data_driven.on as onData
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.test.assertFailsWith
+import org.jetbrains.spek.data_driven.on as onData
 
 /*
 Suddenly, whirling in the distance, you notice what looks like a massive, pixelated hurricane:
@@ -268,7 +271,7 @@ class CircularBuffer2(var second: Int?, var size: Int, var pos: Int) {
     fun insert(value: Int): CircularBuffer2 {
         size++
         if (pos == 0) second = value
-        pos = pos + 1
+        pos += 1
         return this
     }
     fun incrPos(i: Int): CircularBuffer2 {
